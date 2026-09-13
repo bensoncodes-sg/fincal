@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 
 /// Design tokens from the Basis Precision System.
 ///
-/// Two rules this file exists to enforce:
+/// Rules this file exists to enforce:
 ///   1. Every numeral in the app is IBM Plex Mono with tabular figures.
-///   2. Depth comes from hairlines, never from shadows.
+///   2. Prose is never set in the mono face; it is for figures only.
+///   3. Cards sit on a softly tinted ground, lifted by a hairline and one
+///      very soft shadow, so what is tappable reads as an object.
 class BasisColors {
   final Color ink;
   final Color inkMute;
@@ -32,10 +34,10 @@ class BasisColors {
 
   static const light = BasisColors(
     ink: Color(0xFF0C1116),
-    inkMute: Color(0xFF5B6B66),
-    ground: Color(0xFFFFFFFF),
-    surface: Color(0xFFF4F6F5),
-    line: Color(0xFFDFE5E2),
+    inkMute: Color(0xFF56655F),
+    ground: Color(0xFFF5F7F6),
+    surface: Color(0xFFFFFFFF),
+    line: Color(0xFFE1E7E4),
     accent: Color(0xFF0F6E52),
     accentSoft: Color(0xFFE3F0EB),
     positive: Color(0xFF17876A),
@@ -47,8 +49,8 @@ class BasisColors {
     ink: Color(0xFFE9EEEB),
     inkMute: Color(0xFF8E9E98),
     ground: Color(0xFF0B0F0D),
-    surface: Color(0xFF151B18),
-    line: Color(0xFF26302C),
+    surface: Color(0xFF151C19),
+    line: Color(0xFF263230),
     accent: Color(0xFF46B48F),
     accentSoft: Color(0xFF14312A),
     positive: Color(0xFF4FC2A0),
@@ -191,14 +193,40 @@ class S {
 }
 
 class R {
-  static const card = BorderRadius.all(Radius.circular(14));
-  static const input = BorderRadius.all(Radius.circular(10));
+  static const card = BorderRadius.all(Radius.circular(18));
+  static const input = BorderRadius.all(Radius.circular(12));
   static const pill = BorderRadius.all(Radius.circular(999));
-  static const sheet = BorderRadius.vertical(top: Radius.circular(20));
+  static const sheet = BorderRadius.vertical(top: Radius.circular(24));
+}
+
+/// One very soft shadow, the only elevation in the app. Dark mode drops it:
+/// shadows vanish on a dark ground, and the hairline carries the edge alone.
+List<BoxShadow> softShadow(BuildContext context) => context.isDark
+    ? const []
+    : const [
+        BoxShadow(
+          color: Color(0x0F0C1116),
+          blurRadius: 18,
+          offset: Offset(0, 6),
+        ),
+      ];
+
+/// A colour pair for one question group: a soft tile and the icon on it.
+@immutable
+class Hue {
+  final Color tile;
+  final Color ink;
+  const Hue(this.tile, this.ink);
 }
 
 ThemeData buildMaterialTheme(BasisColors c, bool dark) {
   return ThemeData(
+    snackBarTheme: SnackBarThemeData(
+      behavior: SnackBarBehavior.floating,
+      backgroundColor: c.ink,
+      shape: const RoundedRectangleBorder(borderRadius: R.input),
+      actionTextColor: dark ? c.accentSoft : const Color(0xFF8FD9BE),
+    ),
     useMaterial3: true,
     brightness: dark ? Brightness.dark : Brightness.light,
     scaffoldBackgroundColor: c.ground,

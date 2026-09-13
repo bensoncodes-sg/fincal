@@ -234,8 +234,8 @@ class _Headers extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    col.calculator.name.toUpperCase(),
-                    style: T.label.copyWith(color: c.inkMute, fontSize: 9),
+                    col.calculator.name,
+                    style: T.bodySm.copyWith(color: c.inkMute, fontSize: 12),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -301,8 +301,8 @@ class _Row extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  row.label.toUpperCase(),
-                  style: T.label.copyWith(color: c.inkMute, fontSize: 10),
+                  row.label,
+                  style: T.bodySm.copyWith(color: c.inkMute),
                 ),
               ),
               if (allowBest && row.better != Better.none)

@@ -121,7 +121,7 @@ void main() {
     final tour = await launch(tester, InMemoryTourMemory(seen: true));
     expect(tour.isActive, isFalse);
 
-    await tester.tap(find.text('SETTINGS'));
+    await tester.tap(find.text('Settings'));
     await settle(tester);
     await tester.ensureVisible(find.text('Replay the app tour'));
     await settle(tester, 4);

@@ -169,7 +169,12 @@ void main() {
     // Both options are on screen, not scrolled out of reach.
     expect(find.text('Pay a fixed amount').hitTestable(), findsOneWidget);
 
-    await tester.ensureVisible(find.text('Clear it by a date'));
+    // Mid-screen, clear of the save bar pinned to the bottom.
+    await tester.runAsync(() => Scrollable.ensureVisible(
+          tester.element(find.text('Clear it by a date')),
+          alignment: 0.5,
+        ));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Clear it by a date'));
     await tester.pumpAndSettle();
 
@@ -204,6 +209,8 @@ void main() {
       of: find.byKey(const ValueKey('balance')),
       matching: find.byType(EditableText),
     );
+    await tester.ensureVisible(field);
+    await tester.pumpAndSettle();
     await tester.tap(field);
     await tester.pump();
     await tester.pump();
@@ -293,7 +300,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('OPEN'));
+    await tester.tap(find.text('Open'));
     await tester.pumpAndSettle();
 
     expect(find.byType(CalculatorScreen), findsOneWidget);

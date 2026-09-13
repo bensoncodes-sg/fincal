@@ -661,7 +661,7 @@ class _TourCard extends StatelessWidget {
         width: width,
         padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
         decoration: BoxDecoration(
-          color: c.ground,
+          color: c.surface,
           borderRadius: R.card,
           border: Border.all(color: c.line),
           boxShadow: const [

@@ -6,6 +6,24 @@ Financial calculators for Singapore. Flutter + Dart, no plugins.
 cd C:/basis && flutter run -d chrome
 ```
 
+## Look and feel
+
+Designed to be usable by someone who has never used a financial calculator:
+
+- **Home** greets you, has a search box that understands everyday words
+  ("house", "tax", "COE"), and colour-codes the six question groups.
+- **Inputs look like inputs**: each value sits in a box with S$ or its unit,
+  a helper line under the label, and a clear outline while you edit.
+- **Jargon is explained where it appears**: an ⓘ next to TDSR, LTV, tenor,
+  flat rate and ~25 other terms opens a plain-language note
+  (`lib/ui/glossary.dart`, tested so it never matches inside other words).
+- **Example numbers say so** in a banner as well as the EXAMPLE badge.
+- **Nothing reads as an alarm**: an incomplete input shows "Almost there",
+  tips use readable text with an icon, and assumptions show their name
+  ("TDSR ceiling: 55%") rather than a bare number.
+- **Prompts are consistent bottom sheets** with large buttons; saving offers a
+  suggested name and a "View" shortcut to Saved.
+
 ## Intro tour
 
 First launch shows a 10-step guided tour (`lib/ui/tour.dart`). It dims the
@@ -65,7 +83,7 @@ save, reload, reopen, export.
 build pins Flutter 3.44.4 and runs `flutter test` first, so a failing test
 stops the deploy.
 
-Tests: `flutter test` — 368 passing, plus the web parity check below. Golden coverage: every one of the 19
+Tests: `flutter test` — 372 passing, plus the web parity check below. Golden coverage: every one of the 19
 calculators has a golden file, 49 of 49 cases captured with named provenance.
 
 ## The architectural bet

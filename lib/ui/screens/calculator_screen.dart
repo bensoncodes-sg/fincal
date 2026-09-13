@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/calculator.dart';
 import '../../core/finance.dart';
@@ -6,8 +7,9 @@ import '../../core/money.dart';
 import '../../state.dart';
 import '../components.dart';
 import '../theme.dart';
-import 'export.dart';
 import '../tour.dart';
+import '../visuals.dart';
+import 'export.dart';
 
 /// THE renderer.
 ///
@@ -43,6 +45,10 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   /// figure. This is the difference between a demo and a claim about someone's
   /// money, and it costs one Set to get right.
   final Set<String> _touched = {};
+
+  /// The "these are example numbers" note, once dismissed, stays hidden for
+  /// this visit. It also hides on its own after the first edit.
+  bool _bannerDismissed = false;
 
   @override
   void initState() {
@@ -92,6 +98,24 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(S.margin, 0, S.margin, S.xl),
         children: [
+          _Header(calculator: calc),
+          const SizedBox(height: S.lg),
+
+          // Always one slot, shown or empty, so nothing below changes its
+          // position in the list when the banner goes away.
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            alignment: Alignment.topCenter,
+            child: _allExample && !_bannerDismissed
+                ? Padding(
+                    padding: const EdgeInsets.only(bottom: S.md),
+                    child: ExampleBanner(
+                      onDismiss: () => setState(() => _bannerDismissed = true),
+                    ),
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
+
           TourTarget(
             id: 'calc.result',
             child: ResultStack(result: result, isExample: _allExample),
@@ -112,19 +136,34 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
           // cleared a field on the way to typing a new number.
           const SizedBox(height: S.md),
           SizedBox(
-            height: 28,
-            child: result.explain == null
+            width: double.infinity,
+            child: result.explain == null || result.explain!.assumptions.isEmpty
                 ? null
-                : ListView(
-                    scrollDirection: Axis.horizontal,
+                : Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      for (final a in result.explain!.assumptions.take(3))
-                        AssumptionChip(a.value, onTap: () => _openMath(result)),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 2),
+                        child: Text(
+                          'Based on',
+                          style: T.bodySm.copyWith(color: c.inkMute),
+                        ),
+                      ),
+                      // Name and value together: a bare "55%" means nothing.
+                      // Distinct entries only, so a repeat never reads as a
+                      // glitch.
+                      for (final text in {
+                        for (final a in result.explain!.assumptions)
+                          '${a.label}: ${a.value}',
+                      }.take(3))
+                        AssumptionChip(text, onTap: () => _openMath(result)),
                     ],
                   ),
           ),
 
-          const SizedBox(height: S.md),
+          const SizedBox(height: S.lg),
 
           TourTarget(
             key: const ValueKey('inputs-card'),
@@ -184,27 +223,22 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
             const SizedBox(height: S.md),
             _linkRow(
               context,
+              Icons.table_rows_outlined,
               'Payment schedule',
-              '${result.schedule.length} rows',
+              '${result.schedule.length} payments',
               () => _openSchedule(result),
             ),
           ],
 
           if (result.explain != null) ...[
             const SizedBox(height: S.md),
-            Center(
-              child: TourTarget(
-                id: 'calc.math',
-                child: TextButton(
-                  onPressed: () => _openMath(result),
-                  child: Text(
-                    'Show the math',
-                    style: T.body.copyWith(
-                      color: c.accent,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
+            TourTarget(
+              id: 'calc.math',
+              child: BasisButton(
+                label: 'Show the math',
+                icon: Icons.functions_rounded,
+                filled: false,
+                onTap: () => _openMath(result),
               ),
             ),
           ],
@@ -215,6 +249,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         child: SaveBar(
           onSave: result.error != null ? null : () => _save(result),
           secondaryLabel: 'Export',
+          secondaryIcon: Icons.ios_share_rounded,
           onCompare: result.error != null
               ? null
               : () => showExportSheet(
@@ -280,8 +315,8 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
                 style: T.figureSm.copyWith(color: c.inkMute),
               ),
               Text(
-                spec.label.toUpperCase(),
-                style: T.label.copyWith(color: c.inkMute, fontSize: 11),
+                'Slide to adjust',
+                style: T.bodySm.copyWith(color: c.inkMute),
               ),
               Text(
                 '${max.toStringAsFixed(2)}%',
@@ -309,6 +344,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
 
   Widget _linkRow(
     BuildContext context,
+    IconData icon,
     String label,
     String meta,
     VoidCallback onTap,
@@ -319,6 +355,8 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       child: BasisCard(
         child: Row(
           children: [
+            Icon(icon, size: 20, color: c.accent),
+            const SizedBox(width: S.md),
             Expanded(
               child: Text(label, style: T.body.copyWith(color: c.ink)),
             ),
@@ -351,11 +389,22 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
 
   Future<void> _save(CalcResult r) async {
     if (r.error != null) return;
-    final name = await showDialog<String>(
-      context: context,
-      builder: (ctx) => _NameDialog(colors: context.c),
+    // "13 Sep", not "Sep 26": a two-digit year reads like a day of the month.
+    final now = DateTime.now();
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', //
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final suggestion =
+        '${widget.calculator.name} · ${now.day} ${months[now.month - 1]}';
+    final name = await showBasisSheet<String>(
+      context,
+      title: 'Save this scenario',
+      icon: Icons.bookmark_add_outlined,
+      builder: (_) => _NameSheet(suggestion: suggestion),
     );
     if (name == null || !mounted) return;
+    HapticFeedback.lightImpact();
     await widget.app.saveScenario(
       Scenario(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
@@ -368,11 +417,23 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       ),
     );
     if (!mounted) return;
+    final tour = TourScope.maybeOf(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Saved', style: T.body),
-        backgroundColor: context.c.ink,
-        duration: const Duration(seconds: 2),
+        content: Text(
+          'Saved to your scenarios',
+          style: T.body.copyWith(color: context.c.ground),
+        ),
+        duration: const Duration(seconds: 3),
+        action: tour?.selectTab == null
+            ? null
+            : SnackBarAction(
+                label: 'View',
+                onPressed: () {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  tour?.selectTab?.call(1);
+                },
+              ),
       ),
     );
   }
@@ -387,10 +448,16 @@ PreferredSizeWidget _bar(BuildContext context, String title) {
     elevation: 0,
     titleSpacing: 0,
     leading: IconButton(
-      icon: Icon(Icons.arrow_back, color: c.ink),
+      tooltip: 'Back',
+      icon: Icon(Icons.arrow_back_rounded, color: c.ink),
       onPressed: () => Navigator.of(context).maybePop(),
     ),
-    title: Text(title, style: T.title.copyWith(color: c.ink)),
+    title: Text(
+      title,
+      style: T.title.copyWith(color: c.ink, fontSize: 19),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    ),
   );
 }
 
@@ -409,7 +476,7 @@ class MathSheet extends StatelessWidget {
     final c = colors;
     final e = result.explain!;
     return Container(
-      decoration: BoxDecoration(color: c.ground, borderRadius: R.sheet),
+      decoration: BoxDecoration(color: c.surface, borderRadius: R.sheet),
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.78,
       ),
@@ -493,7 +560,7 @@ class MathSheet extends StatelessWidget {
     width: double.infinity,
     padding: const EdgeInsets.all(S.md),
     decoration: BoxDecoration(
-      color: c.surface,
+      color: c.ground,
       borderRadius: R.input,
       border: Border.all(color: c.line),
     ),
@@ -695,14 +762,42 @@ class ScheduleScreen extends StatelessWidget {
   }
 }
 
-class _NameDialog extends StatefulWidget {
-  final BasisColors colors;
-  const _NameDialog({required this.colors});
+/// Icon and one-line description at the top of every calculator, so people
+/// know what the screen does before they read any numbers.
+class _Header extends StatelessWidget {
+  final Calculator calculator;
+  const _Header({required this.calculator});
+
   @override
-  State<_NameDialog> createState() => _NameDialogState();
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Row(
+      children: [
+        IconTile(
+          icon: calculatorIcon(calculator),
+          hue: questionHue(context, calculator.question),
+          size: 40,
+        ),
+        const SizedBox(width: S.md),
+        Expanded(
+          child: Text(
+            calculator.description,
+            style: T.body.copyWith(color: c.inkMute),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-class _NameDialogState extends State<_NameDialog> {
+class _NameSheet extends StatefulWidget {
+  final String suggestion;
+  const _NameSheet({required this.suggestion});
+  @override
+  State<_NameSheet> createState() => _NameSheetState();
+}
+
+class _NameSheetState extends State<_NameSheet> {
   final _ctl = TextEditingController();
 
   @override
@@ -711,46 +806,68 @@ class _NameDialogState extends State<_NameDialog> {
     super.dispose();
   }
 
+  void _submit() {
+    final text = _ctl.text.trim();
+    Navigator.pop(context, text.isEmpty ? widget.suggestion : text);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final c = widget.colors;
-    return AlertDialog(
-      backgroundColor: c.ground,
-      shape: const RoundedRectangleBorder(borderRadius: R.card),
-      title: Text('Name this scenario', style: T.title.copyWith(color: c.ink)),
-      content: TextField(
-        controller: _ctl,
-        autofocus: true,
-        style: T.body.copyWith(color: c.ink),
-        cursorColor: c.accent,
-        decoration: InputDecoration(
-          hintText: 'Punggol 4-room, 25 yr',
-          hintStyle: T.body.copyWith(color: c.inkMute),
-          enabledBorder: UnderlineInputBorder(
-            borderSide: BorderSide(color: c.line),
-          ),
-          focusedBorder: UnderlineInputBorder(
-            borderSide: BorderSide(color: c.accent),
-          ),
+    final c = context.c;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Give it a name you will recognise later. You can find it in Saved.',
+          style: T.body.copyWith(color: c.inkMute),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('Cancel', style: T.body.copyWith(color: c.inkMute)),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(
-            context,
-            _ctl.text.trim().isEmpty ? 'Untitled' : _ctl.text.trim(),
-          ),
-          child: Text(
-            'Save',
-            style: T.body.copyWith(
-              color: c.accent,
-              fontWeight: FontWeight.w600,
+        const SizedBox(height: S.lg),
+        TextField(
+          controller: _ctl,
+          autofocus: true,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _submit(),
+          style: T.body.copyWith(color: c.ink),
+          cursorColor: c.accent,
+          decoration: InputDecoration(
+            hintText: widget.suggestion,
+            hintStyle: T.body.copyWith(color: c.inkMute),
+            filled: true,
+            fillColor: c.ground,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: S.lg,
+              vertical: 14,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: R.input,
+              borderSide: BorderSide(color: c.line),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: R.input,
+              borderSide: BorderSide(color: c.accent, width: 1.6),
             ),
           ),
+        ),
+        const SizedBox(height: S.xl),
+        Row(
+          children: [
+            Expanded(
+              child: BasisButton(
+                label: 'Cancel',
+                filled: false,
+                onTap: () => Navigator.pop(context),
+              ),
+            ),
+            const SizedBox(width: S.md),
+            Expanded(
+              flex: 2,
+              child: BasisButton(
+                label: 'Save',
+                icon: Icons.check_rounded,
+                onTap: _submit,
+              ),
+            ),
+          ],
         ),
       ],
     );

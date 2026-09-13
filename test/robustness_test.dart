@@ -166,7 +166,13 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      // The inputs sit below the result and the example note.
+      await tester.drag(find.byType(ListView).first, const Offset(0, -400));
+      await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextField).first, '-100000');
+      await tester.pumpAndSettle();
+      // Back up to the result card, where the badge is.
+      await tester.drag(find.byType(ListView).first, const Offset(0, 800));
       await tester.pumpAndSettle();
       expect(find.text('LIVE'), findsOneWidget);
     });

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../core/calculator.dart';
 import '../core/money.dart';
+import 'glossary.dart';
 import 'theme.dart';
 
 /// Colour for a charted series. A neutral tone means "carries no good/bad
@@ -28,13 +29,17 @@ class SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.only(bottom: S.sm, top: S.lg),
+    padding: const EdgeInsets.only(bottom: S.sm, top: S.xl),
     child: Row(
       children: [
         Expanded(
           child: Text(
-            text.toUpperCase(),
-            style: T.label.copyWith(color: context.c.inkMute),
+            text,
+            style: T.body.copyWith(
+              color: context.c.ink,
+              fontWeight: FontWeight.w600,
+              fontVariations: const [FontVariation('wght', 600)],
+            ),
           ),
         ),
         ?trailing,
@@ -65,10 +70,239 @@ class BasisCard extends StatelessWidget {
       color: context.c.surface,
       borderRadius: R.card,
       border: Border.all(color: context.c.line),
+      boxShadow: softShadow(context),
     ),
     padding: padding,
     child: child,
   );
+}
+
+/// A rounded, softly tinted square holding an icon.
+class IconTile extends StatelessWidget {
+  final IconData icon;
+  final Hue hue;
+  final double size;
+  const IconTile({
+    super.key,
+    required this.icon,
+    required this.hue,
+    this.size = 44,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      color: hue.tile,
+      borderRadius: BorderRadius.circular(size * 0.3),
+    ),
+    child: Icon(icon, size: size * 0.5, color: hue.ink),
+  );
+}
+
+/// Small "i" next to a term; opens a plain-language explanation.
+class InfoButton extends StatelessWidget {
+  final GlossaryEntry entry;
+  const InfoButton(this.entry, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Semantics(
+      button: true,
+      label: 'What is ${entry.term}?',
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => showGlossarySheet(context, entry),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          child: Icon(Icons.info_outline_rounded, size: 17, color: c.inkMute),
+        ),
+      ),
+    );
+  }
+}
+
+/// The standard bottom sheet: grab handle, title, content.
+Future<V?> showBasisSheet<V>(
+  BuildContext context, {
+  required String title,
+  required WidgetBuilder builder,
+  IconData? icon,
+}) {
+  final c = context.c;
+  return showModalBottomSheet<V>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (sheetContext) => Padding(
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(sheetContext).viewInsets.bottom,
+      ),
+      child: Container(
+        decoration: BoxDecoration(color: c.surface, borderRadius: R.sheet),
+        padding: EdgeInsets.fromLTRB(
+          S.margin,
+          S.md,
+          S.margin,
+          S.xl + MediaQuery.of(sheetContext).padding.bottom,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 36,
+                height: 4,
+                decoration: BoxDecoration(color: c.line, borderRadius: R.pill),
+              ),
+            ),
+            const SizedBox(height: S.lg),
+            Row(
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 22, color: c.accent),
+                  const SizedBox(width: S.sm),
+                ],
+                Expanded(
+                  child: Text(title, style: T.title.copyWith(color: c.ink)),
+                ),
+              ],
+            ),
+            const SizedBox(height: S.md),
+            Builder(builder: builder),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Future<void> showGlossarySheet(BuildContext context, GlossaryEntry entry) {
+  final c = context.c;
+  return showBasisSheet<void>(
+    context,
+    title: entry.term,
+    icon: Icons.lightbulb_outline_rounded,
+    builder: (sheetContext) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(entry.meaning, style: T.body.copyWith(color: c.ink, height: 1.5)),
+        const SizedBox(height: S.xl),
+        BasisButton(
+          label: 'Got it',
+          onTap: () => Navigator.of(sheetContext).pop(),
+        ),
+      ],
+    ),
+  );
+}
+
+/// The app's buttons. Filled for the main action, outlined for the rest.
+class BasisButton extends StatelessWidget {
+  final String label;
+  final VoidCallback? onTap;
+  final IconData? icon;
+  final bool filled;
+  final double height;
+
+  const BasisButton({
+    super.key,
+    required this.label,
+    required this.onTap,
+    this.icon,
+    this.filled = true,
+    this.height = 50,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final enabled = onTap != null;
+    final fg = filled ? (context.isDark ? c.ground : Colors.white) : c.ink;
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: label,
+      excludeSemantics: true,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: AnimatedOpacity(
+          duration: const Duration(milliseconds: 150),
+          opacity: enabled ? 1 : 0.4,
+          child: Container(
+            height: height,
+            padding: const EdgeInsets.symmetric(horizontal: S.lg),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: filled ? c.accent : c.surface,
+              borderRadius: R.input,
+              border: filled ? null : Border.all(color: c.line),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 19, color: fg),
+                  const SizedBox(width: S.sm),
+                ],
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: T.body.copyWith(
+                      color: fg,
+                      fontWeight: FontWeight.w600,
+                      fontVariations: const [FontVariation('wght', 600)],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Explains, once, that the numbers on screen are samples.
+class ExampleBanner extends StatelessWidget {
+  final VoidCallback? onDismiss;
+  const ExampleBanner({super.key, this.onDismiss});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(S.md, S.md, S.xs, S.md),
+      decoration: BoxDecoration(color: c.accentSoft, borderRadius: R.input),
+      child: Row(
+        children: [
+          Icon(Icons.touch_app_outlined, size: 20, color: c.accent),
+          const SizedBox(width: S.md),
+          Expanded(
+            child: Text(
+              'These are example numbers. Tap any value below to use your own.',
+              style: T.bodySm.copyWith(color: c.ink, height: 1.4),
+            ),
+          ),
+          if (onDismiss != null)
+            IconButton(
+              onPressed: onDismiss,
+              tooltip: 'Hide',
+              visualDensity: VisualDensity.compact,
+              icon: Icon(Icons.close_rounded, size: 18, color: c.inkMute),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -200,6 +434,7 @@ class _InputRowState extends State<InputRow> {
     final c = context.c;
     final s = widget.spec;
     final active = _node.hasFocus || widget.focused;
+    final term = glossaryFor(s.label);
 
     if (s.kind == InputKind.choice) {
       return _ChoiceRow(
@@ -210,99 +445,143 @@ class _InputRowState extends State<InputRow> {
       );
     }
 
+    final muted = widget.isExample
+        ? c.inkMute.withValues(alpha: 0.55)
+        : c.inkMute;
+    final isMoney = s.kind == InputKind.money || s.kind == InputKind.decimal;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          height: S.rowHeight,
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: S.md),
           child: Row(
             children: [
               Expanded(
-                child: Text(
-                  s.label,
-                  style: T.body.copyWith(color: c.ink),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            s.label,
+                            style: T.body.copyWith(
+                              color: c.ink,
+                              fontWeight: FontWeight.w500,
+                              fontVariations: const [
+                                FontVariation('wght', 500),
+                              ],
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (term != null) InfoButton(term),
+                      ],
+                    ),
+                    if (s.hint != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          s.hint!,
+                          style: T.bodySm.copyWith(color: c.inkMute),
+                        ),
+                      ),
+                  ],
                 ),
               ),
-              const SizedBox(width: S.sm),
-              if (s.kind == InputKind.money || s.kind == InputKind.decimal)
-                Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: Text(
-                    'SGD',
-                    style: T.figureSm.copyWith(
-                      color: widget.isExample
-                          ? c.inkMute.withValues(alpha: 0.45)
-                          : c.inkMute,
+              const SizedBox(width: S.md),
+              // The value sits in a visible box, so it reads as something to
+              // tap and change rather than a figure printed on the page.
+              GestureDetector(
+                onTap: () => _node.requestFocus(),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  height: 46,
+                  constraints: const BoxConstraints(
+                    minWidth: 104,
+                    maxWidth: 176,
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: S.md),
+                  decoration: BoxDecoration(
+                    color: active ? c.surface : c.ground,
+                    borderRadius: R.input,
+                    border: Border.all(
+                      color: active ? c.accent : c.line,
+                      width: active ? 1.6 : 1,
                     ),
                   ),
-                ),
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 150),
-                child: IntrinsicWidth(
-                  child: TextField(
-                    controller: _ctl,
-                    focusNode: _node,
-                    textAlign: TextAlign.right,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                      signed: true,
-                    ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.,\-]')),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isMoney)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 6),
+                          child: Text(
+                            'S\$',
+                            style: T.figureSm.copyWith(color: muted),
+                          ),
+                        ),
+                      Flexible(
+                        child: IntrinsicWidth(
+                          child: TextField(
+                            controller: _ctl,
+                            focusNode: _node,
+                            textAlign: TextAlign.right,
+                            keyboardType: const TextInputType.numberWithOptions(
+                              decimal: true,
+                              signed: true,
+                            ),
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(
+                                RegExp(r'[0-9.,\-]'),
+                              ),
+                            ],
+                            style: T.figure.copyWith(
+                              color: widget.isExample
+                                  ? c.ink.withValues(alpha: 0.42)
+                                  : c.ink,
+                            ),
+                            cursorColor: c.accent,
+                            cursorWidth: 1.5,
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            onChanged: _commit,
+                          ),
+                        ),
+                      ),
+                      if (s.unit != null) ...[
+                        const SizedBox(width: 6),
+                        Text(s.unit!, style: T.figureSm.copyWith(color: muted)),
+                      ],
                     ],
-                    style: T.figure.copyWith(
-                      color: widget.isExample
-                          ? c.ink.withValues(alpha: 0.38)
-                          : c.ink,
-                    ),
-                    cursorColor: c.accent,
-                    cursorWidth: 1.5,
-                    decoration: const InputDecoration(
-                      isDense: true,
-                      border: InputBorder.none,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    onChanged: _commit,
                   ),
                 ),
               ),
-              if (s.unit != null) ...[
-                const SizedBox(width: 6),
-                Text(
-                  s.unit!,
-                  style: T.figureSm.copyWith(
-                    color: widget.isExample
-                        ? c.inkMute.withValues(alpha: 0.45)
-                        : c.inkMute,
-                  ),
-                ),
-              ],
             ],
           ),
         ),
         if (_clampNote != null)
           Padding(
-            padding: const EdgeInsets.only(bottom: S.sm),
-            child: Text(
-              _clampNote!,
-              style: T.label.copyWith(color: c.warn, letterSpacing: 0),
-            ),
-          )
-        else if (s.hint != null && active)
-          Padding(
-            padding: const EdgeInsets.only(bottom: S.sm),
-            child: Text(
-              s.hint!,
-              style: T.label.copyWith(color: c.inkMute, letterSpacing: 0),
+            padding: const EdgeInsets.only(bottom: S.md),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline_rounded, size: 15, color: c.warn),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    _clampNote!,
+                    style: T.bodySm.copyWith(color: c.warn),
+                  ),
+                ),
+              ],
             ),
           ),
-        if (!widget.last)
-          Container(
-            height: active ? 1.5 : 1,
-            color: active ? c.accent : c.line,
-          ),
+        if (!widget.last) const Hairline(),
       ],
     );
   }
@@ -324,16 +603,7 @@ class _ChoiceRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final pills = [
-      for (final opt in spec.choices)
-        _Pill(label: opt, selected: opt == value, onTap: () => onChanged(opt)),
-    ];
-    // Two short options sit beside the label. Anything longer wraps onto its
-    // own line: a sideways-scrolling row hid the first option off-screen.
-    final inline =
-        spec.choices.length <= 2 &&
-        spec.choices.fold<int>(0, (n, o) => n + o.length) <= 16;
-    final label = Text(spec.label, style: T.body.copyWith(color: c.ink));
+    final term = glossaryFor(spec.label);
     // Full width even without the hairline below it, or the last row
     // shrinks to its content and centres in the card.
     return SizedBox(
@@ -343,32 +613,41 @@ class _ChoiceRow extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.symmetric(vertical: S.md),
-            child: inline
-                ? Row(
-                    children: [
-                      Expanded(child: label),
-                      const SizedBox(width: S.sm),
-                      for (final p in pills)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 6),
-                          child: p,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        spec.label,
+                        style: T.body.copyWith(
+                          color: c.ink,
+                          fontWeight: FontWeight.w500,
+                          fontVariations: const [FontVariation('wght', 500)],
                         ),
-                    ],
-                  )
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      label,
-                      const SizedBox(height: S.sm),
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: [
-                          for (final p in pills) IntrinsicWidth(child: p),
-                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                    if (term != null) InfoButton(term),
+                  ],
+                ),
+                const SizedBox(height: S.sm + 2),
+                // Options always wrap under the label. A sideways-scrolling
+                // row once hid the first option off-screen.
+                Wrap(
+                  spacing: S.sm,
+                  runSpacing: S.sm,
+                  children: [
+                    for (final opt in spec.choices)
+                      _Pill(
+                        label: opt,
+                        selected: opt == value,
+                        onTap: () => onChanged(opt),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
           if (!last) const Hairline(),
         ],
@@ -390,22 +669,43 @@ class _Pill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 28,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? c.accentSoft : Colors.transparent,
-          borderRadius: R.pill,
-          border: Border.all(color: selected ? c.accent : c.line),
-        ),
-        child: Text(
-          label,
-          style: T.figureSm.copyWith(
-            color: selected ? c.accent : c.inkMute,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: GestureDetector(
+        onTap: () {
+          if (!selected) HapticFeedback.selectionClick();
+          onTap();
+        },
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          height: 40,
+          padding: EdgeInsets.only(left: selected ? 10 : 14, right: 14),
+          decoration: BoxDecoration(
+            color: selected ? c.accentSoft : c.ground,
+            borderRadius: R.pill,
+            border: Border.all(
+              color: selected ? c.accent : c.line,
+              width: selected ? 1.6 : 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (selected) ...[
+                Icon(Icons.check_rounded, size: 17, color: c.accent),
+                const SizedBox(width: 5),
+              ],
+              Text(
+                label,
+                style: T.body.copyWith(
+                  fontSize: 14,
+                  color: selected ? c.accent : c.ink,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  fontVariations: [FontVariation('wght', selected ? 600 : 500)],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -438,20 +738,38 @@ class ResultStack extends StatelessWidget {
     final c = context.c;
 
     if (result.error != null) {
+      // A missing or impossible input is part of typing a number, not a
+      // failure, so this reads as a nudge rather than an alarm.
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(S.cardPad),
         decoration: BoxDecoration(
-          color: c.surface,
+          color: c.warn.withValues(alpha: context.isDark ? 0.14 : 0.08),
           borderRadius: R.card,
-          border: Border.all(color: c.negative),
+          border: Border.all(color: c.warn.withValues(alpha: 0.35)),
         ),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('CANNOT COMPUTE', style: T.label.copyWith(color: c.negative)),
-            const SizedBox(height: S.sm),
-            Text(result.error!, style: T.body.copyWith(color: c.ink)),
+            Icon(Icons.edit_note_rounded, size: 24, color: c.warn),
+            const SizedBox(width: S.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Almost there',
+                    style: T.body.copyWith(
+                      color: c.ink,
+                      fontWeight: FontWeight.w600,
+                      fontVariations: const [FontVariation('wght', 600)],
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(result.error!, style: T.body.copyWith(color: c.inkMute)),
+                ],
+              ),
+            ),
           ],
         ),
       );
@@ -459,8 +777,12 @@ class ResultStack extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      decoration: BoxDecoration(color: c.accentSoft, borderRadius: R.card),
-      padding: const EdgeInsets.all(S.cardPad),
+      decoration: BoxDecoration(
+        color: c.accentSoft,
+        borderRadius: R.card,
+        border: Border.all(color: c.accent.withValues(alpha: 0.18)),
+      ),
+      padding: const EdgeInsets.fromLTRB(S.xl, S.lg, S.xl, S.xl),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -577,8 +899,8 @@ class _MetricCell extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          m.label.toUpperCase(),
-          style: T.label.copyWith(color: c.inkMute, fontSize: 11),
+          m.label,
+          style: T.bodySm.copyWith(color: c.inkMute),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
@@ -606,16 +928,34 @@ class DeltaLineView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.c;
     final col = toneColor(context, note.tone);
+    final icon = switch (note.tone) {
+      Tone.positive => Icons.check_circle_outline_rounded,
+      Tone.negative => Icons.error_outline_rounded,
+      Tone.warn => Icons.tips_and_updates_outlined,
+      Tone.neutral => Icons.info_outline_rounded,
+    };
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: S.md, vertical: S.md),
+      padding: const EdgeInsets.all(S.md + 2),
       decoration: BoxDecoration(
-        color: col.withValues(alpha: 0.08),
+        color: col.withValues(alpha: context.isDark ? 0.14 : 0.08),
         borderRadius: R.input,
-        border: Border(left: BorderSide(color: col, width: 2)),
       ),
-      child: Text(note.text, style: T.figureSm.copyWith(color: col)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: col),
+          const SizedBox(width: S.md),
+          Expanded(
+            child: Text(
+              note.text,
+              style: T.body.copyWith(color: c.ink, height: 1.45),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -635,24 +975,18 @@ class AssumptionChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 28,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        margin: const EdgeInsets.only(right: S.sm),
-        alignment: Alignment.center,
+        constraints: const BoxConstraints(maxWidth: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
           color: c.surface,
           borderRadius: R.pill,
           border: Border.all(color: c.line),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(label, style: T.figureSm.copyWith(color: c.inkMute)),
-            if (onTap != null) ...[
-              const SizedBox(width: 4),
-              Icon(Icons.keyboard_arrow_down, size: 14, color: c.inkMute),
-            ],
-          ],
+        child: Text(
+          label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: T.bodySm.copyWith(color: c.inkMute),
         ),
       ),
     );
@@ -933,6 +1267,8 @@ class SaveBar extends StatelessWidget {
   final VoidCallback? onCompare;
   final String primaryLabel;
   final String secondaryLabel;
+  final IconData? primaryIcon;
+  final IconData? secondaryIcon;
 
   /// When false the secondary button is not shown at all. When true but
   /// [onCompare] is null it stays in place, disabled, so the bar does not
@@ -945,14 +1281,14 @@ class SaveBar extends StatelessWidget {
     this.onCompare,
     this.primaryLabel = 'Save scenario',
     this.secondaryLabel = 'Compare',
+    this.primaryIcon = Icons.bookmark_add_outlined,
+    this.secondaryIcon,
     this.showSecondary = true,
   });
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    final saveEnabled = onSave != null;
-    final secondaryEnabled = onCompare != null;
     return Container(
       padding: EdgeInsets.fromLTRB(
         S.margin,
@@ -961,7 +1297,7 @@ class SaveBar extends StatelessWidget {
         S.md + MediaQuery.of(context).padding.bottom,
       ),
       decoration: BoxDecoration(
-        color: c.ground,
+        color: c.surface,
         border: Border(top: BorderSide(color: c.line)),
       ),
       child: Row(
@@ -969,60 +1305,21 @@ class SaveBar extends StatelessWidget {
           if (showSecondary) ...[
             Expanded(
               flex: 2,
-              child: Semantics(
-                button: true,
-                enabled: secondaryEnabled,
-                child: GestureDetector(
-                  onTap: onCompare,
-                  child: Opacity(
-                    opacity: secondaryEnabled ? 1 : 0.4,
-                    child: Container(
-                      height: 48,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        borderRadius: R.input,
-                        border: Border.all(color: c.line),
-                      ),
-                      child: Text(
-                        secondaryLabel,
-                        style: T.body.copyWith(
-                          color: c.ink,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+              child: BasisButton(
+                label: secondaryLabel,
+                icon: secondaryIcon,
+                filled: false,
+                onTap: onCompare,
               ),
             ),
             const SizedBox(width: S.md),
           ],
           Expanded(
             flex: 3,
-            child: Semantics(
-              button: true,
-              enabled: saveEnabled,
-              child: GestureDetector(
-                onTap: onSave,
-                child: Opacity(
-                  opacity: saveEnabled ? 1 : 0.4,
-                  child: Container(
-                    height: 48,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: c.accent,
-                      borderRadius: R.input,
-                    ),
-                    child: Text(
-                      primaryLabel,
-                      style: T.body.copyWith(
-                        color: c.ground,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+            child: BasisButton(
+              label: primaryLabel,
+              icon: primaryIcon,
+              onTap: onSave,
             ),
           ),
         ],

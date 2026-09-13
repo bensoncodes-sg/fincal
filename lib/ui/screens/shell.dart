@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../calculators/registry.dart';
 import '../../core/calculator.dart';
@@ -9,8 +10,9 @@ import '../theme.dart';
 import 'calculator_screen.dart';
 import 'compare.dart';
 import 'feedback_sheet.dart';
-import 'splash.dart';
+import '../glossary.dart';
 import '../tour.dart';
+import '../visuals.dart';
 
 class Shell extends StatefulWidget {
   final AppState app;
@@ -69,10 +71,10 @@ class _TabBar extends StatelessWidget {
   const _TabBar({required this.index, required this.onChanged});
 
   static const _items = [
-    (Icons.calculate_outlined, 'Home'),
-    (Icons.bookmark_border, 'Saved'),
-    (Icons.compare_arrows, 'Compare'),
-    (Icons.tune, 'Settings'),
+    (Icons.home_outlined, Icons.home_rounded, 'Home'),
+    (Icons.bookmark_border_rounded, Icons.bookmark_rounded, 'Saved'),
+    (Icons.compare_arrows_rounded, Icons.compare_arrows_rounded, 'Compare'),
+    (Icons.tune_rounded, Icons.tune_rounded, 'Settings'),
   ];
 
   @override
@@ -80,11 +82,11 @@ class _TabBar extends StatelessWidget {
     final c = context.c;
     return Container(
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).padding.bottom,
-        top: 6,
+        bottom: MediaQuery.of(context).padding.bottom + 4,
+        top: 8,
       ),
       decoration: BoxDecoration(
-        color: c.ground,
+        color: c.surface,
         border: Border(top: BorderSide(color: c.line)),
       ),
       child: Row(
@@ -93,31 +95,54 @@ class _TabBar extends StatelessWidget {
           for (var i = 0; i < _items.length; i++)
             TourTarget(
               id: 'tab.$i',
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => onChanged(i),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: S.md,
-                    vertical: 6,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        _items[i].$1,
-                        size: 20,
-                        color: i == index ? c.accent : c.inkMute,
-                      ),
-                      const SizedBox(height: S.xs),
-                      Text(
-                        _items[i].$2.toUpperCase(),
-                        style: T.label.copyWith(
-                          fontSize: 10,
-                          color: i == index ? c.accent : c.inkMute,
+              child: Semantics(
+                button: true,
+                selected: i == index,
+                label: _items[i].$3,
+                excludeSemantics: true,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () {
+                    if (i != index) HapticFeedback.selectionClick();
+                    onChanged(i);
+                  },
+                  child: SizedBox(
+                    width: 76,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          width: 56,
+                          height: 30,
+                          decoration: BoxDecoration(
+                            color: i == index
+                                ? c.accentSoft
+                                : Colors.transparent,
+                            borderRadius: R.pill,
+                          ),
+                          child: Icon(
+                            i == index ? _items[i].$2 : _items[i].$1,
+                            size: 22,
+                            color: i == index ? c.accent : c.inkMute,
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 3),
+                        Text(
+                          _items[i].$3,
+                          style: T.bodySm.copyWith(
+                            fontSize: 12,
+                            color: i == index ? c.accent : c.inkMute,
+                            fontWeight: i == index
+                                ? FontWeight.w600
+                                : FontWeight.w500,
+                            fontVariations: [
+                              FontVariation('wght', i == index ? 600 : 500),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -132,106 +157,228 @@ class _TabBar extends StatelessWidget {
 // Home — the question hub
 // ---------------------------------------------------------------------------
 
-class HomeTab extends StatelessWidget {
+class HomeTab extends StatefulWidget {
   final AppState app;
   const HomeTab({super.key, required this.app});
 
-  static const _icons = {
-    Question.afford: Icons.home_outlined,
-    Question.loanCost: Icons.account_balance_outlined,
-    Question.later: Icons.timeline_outlined,
-    Question.worthIt: Icons.trending_up,
-    Question.takeHome: Icons.receipt_long_outlined,
-    Question.quick: Icons.bolt_outlined,
-  };
+  @override
+  State<HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<HomeTab> {
+  final _search = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  /// Every word typed must appear somewhere: the name, the description, the
+  /// question group, or the everyday words people use for it.
+  List<Calculator> _matches() {
+    final words = _query
+        .toLowerCase()
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .toList();
+    if (words.isEmpty) return const [];
+    return allCalculators.where((calc) {
+      final haystack = [
+        calc.name,
+        calc.description,
+        calc.question.label,
+        calculatorKeywords[calc.id] ?? '',
+      ].join(' ').toLowerCase();
+      return words.every(haystack.contains);
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
     final c = context.c;
+    final app = widget.app;
     final recent = app.scenarios.take(2).toList();
+    final searching = _query.trim().isNotEmpty;
+    final matches = _matches();
+    final tour = TourScope.maybeOf(context);
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(S.margin, S.sm, S.margin, S.xl),
+      padding: const EdgeInsets.fromLTRB(S.margin, S.md, S.margin, S.xl),
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       children: [
         Row(
           children: [
-            const BasisMark(size: 30),
+            const _BrandTile(),
             const SizedBox(width: S.sm),
             Expanded(
-              child: Text('Basis', style: T.title.copyWith(color: c.ink)),
-            ),
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: c.surface,
-                shape: BoxShape.circle,
-                border: Border.all(color: c.line),
+              child: Text(
+                'Basis',
+                style: T.title.copyWith(color: c.ink, fontSize: 20),
               ),
-              alignment: Alignment.center,
-              child: Text('B', style: T.figureSm.copyWith(color: c.inkMute)),
             ),
+            if (tour != null)
+              IconButton(
+                tooltip: 'Show me around',
+                onPressed: tour.start,
+                icon: Icon(Icons.help_outline_rounded, color: c.inkMute),
+              ),
           ],
         ),
         const SizedBox(height: S.lg),
         Text(
-          'What are you working out today?',
+          greetingFor(DateTime.now()),
           style: T.body.copyWith(color: c.inkMute),
         ),
+        const SizedBox(height: 2),
+        Text(
+          'What are you working out today?',
+          style: T.display.copyWith(color: c.ink, fontSize: 28, height: 1.15),
+        ),
         const SizedBox(height: S.lg),
-        TourTarget(
-          id: 'home.questions',
-          child: Column(
-            children: [
-              for (final q in Question.values)
-                Padding(
-                  padding: EdgeInsets.only(
-                    bottom: q == Question.values.last ? 0 : S.gutter,
+        _SearchField(
+          controller: _search,
+          onChanged: (v) => setState(() => _query = v),
+          onClear: () {
+            _search.clear();
+            setState(() => _query = '');
+          },
+        ),
+        const SizedBox(height: S.lg),
+        if (searching) ...[
+          if (matches.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: S.xl),
+              child: Column(
+                children: [
+                  Icon(Icons.search_off_rounded, size: 36, color: c.inkMute),
+                  const SizedBox(height: S.md),
+                  Text(
+                    'No calculator matches "${_query.trim()}"',
+                    style: T.body.copyWith(color: c.ink),
+                    textAlign: TextAlign.center,
                   ),
-                  child: _QuestionCard(
-                    question: q,
-                    icon: _icons[q]!,
-                    count: builtCountFor(q),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => CategoryScreen(question: q, app: app),
+                  const SizedBox(height: S.xs),
+                  Text(
+                    'Try a word like loan, CPF, tax or savings.',
+                    style: T.bodySm.copyWith(color: c.inkMute),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            )
+          else ...[
+            Text(
+              '${matches.length} ${matches.length == 1 ? "calculator" : "calculators"}',
+              style: T.bodySm.copyWith(color: c.inkMute),
+            ),
+            const SizedBox(height: S.sm),
+            for (final calc in matches)
+              Padding(
+                padding: const EdgeInsets.only(bottom: S.sm),
+                child: ToolTile(calculator: calc, app: app),
+              ),
+          ],
+        ] else ...[
+          TourTarget(
+            id: 'home.questions',
+            child: Column(
+              children: [
+                for (final q in Question.values)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      bottom: q == Question.values.last ? 0 : S.md,
+                    ),
+                    child: _QuestionCard(
+                      question: q,
+                      count: builtCountFor(q),
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => CategoryScreen(question: q, app: app),
+                        ),
                       ),
                     ),
                   ),
-                ),
-            ],
-          ),
-        ),
-        if (recent.isNotEmpty) ...[
-          const SectionLabel('Recent'),
-          TourTarget(
-            id: 'home.recent',
-            child: SizedBox(
-              height: 96,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                itemCount: recent.length,
-                separatorBuilder: (_, _) => const SizedBox(width: S.gutter),
-                itemBuilder: (_, i) =>
-                    _RecentCard(scenario: recent[i], app: app),
-              ),
+              ],
             ),
           ),
+          if (recent.isNotEmpty) ...[
+            const SectionLabel('Recent'),
+            TourTarget(
+              id: 'home.recent',
+              child: SizedBox(
+                height: 118,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  itemCount: recent.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: S.md),
+                  itemBuilder: (_, i) =>
+                      _RecentCard(scenario: recent[i], app: app),
+                ),
+              ),
+            ),
+          ],
         ],
       ],
     );
   }
 }
 
+class _SearchField extends StatelessWidget {
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onClear;
+  const _SearchField({
+    required this.controller,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      textInputAction: TextInputAction.search,
+      style: T.body.copyWith(color: c.ink),
+      cursorColor: c.accent,
+      decoration: InputDecoration(
+        hintText: 'Search calculators, e.g. loan, CPF, tax',
+        hintStyle: T.body.copyWith(color: c.inkMute),
+        prefixIcon: Icon(Icons.search_rounded, color: c.inkMute),
+        suffixIcon: controller.text.isEmpty
+            ? null
+            : IconButton(
+                tooltip: 'Clear',
+                onPressed: onClear,
+                icon: Icon(Icons.close_rounded, color: c.inkMute, size: 20),
+              ),
+        filled: true,
+        fillColor: c.surface,
+        contentPadding: const EdgeInsets.symmetric(vertical: 14),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: R.pill,
+          borderSide: BorderSide(color: c.line),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: R.pill,
+          borderSide: BorderSide(color: c.accent, width: 1.6),
+        ),
+      ),
+    );
+  }
+}
+
 class _QuestionCard extends StatelessWidget {
   final Question question;
-  final IconData icon;
   final int count;
   final VoidCallback onTap;
 
   const _QuestionCard({
     required this.question,
-    required this.icon,
     required this.count,
     required this.onTap,
   });
@@ -239,54 +386,141 @@ class _QuestionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.c;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 76,
-        padding: const EdgeInsets.symmetric(horizontal: S.cardPad),
-        decoration: BoxDecoration(
-          color: c.surface,
-          borderRadius: R.card,
-          border: Border.all(color: c.line),
+    final hue = questionHue(context, question);
+    return Semantics(
+      button: true,
+      label: '${question.label}, $count ${count == 1 ? "tool" : "tools"}',
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: BasisCard(
+          padding: const EdgeInsets.all(S.lg - 2),
+          child: Row(
+            children: [
+              IconTile(icon: questionIcons[question]!, hue: hue, size: 48),
+              const SizedBox(width: S.md + 2),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      question.label,
+                      style: T.title.copyWith(color: c.ink, fontSize: 17),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      question.blurb,
+                      style: T.bodySm.copyWith(color: c.inkMute),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: S.sm),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: hue.tile,
+                  borderRadius: R.pill,
+                ),
+                child: Text(
+                  '$count',
+                  style: T.figureSm.copyWith(color: hue.ink),
+                ),
+              ),
+              const SizedBox(width: 2),
+              Icon(Icons.chevron_right_rounded, size: 22, color: c.inkMute),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+/// One calculator in a list: icon, name, what it does.
+class ToolTile extends StatelessWidget {
+  final Calculator calculator;
+  final AppState app;
+  const ToolTile({super.key, required this.calculator, required this.app});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final t = calculator;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => CalculatorScreen(calculator: t, app: app),
+        ),
+      ),
+      child: BasisCard(
+        padding: const EdgeInsets.all(S.md + 2),
         child: Row(
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: c.accentSoft,
-                borderRadius: R.input,
-              ),
-              child: Icon(icon, size: 19, color: c.accent),
+            IconTile(
+              icon: calculatorIcon(t),
+              hue: questionHue(context, t.question),
+              size: 42,
             ),
             const SizedBox(width: S.md),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    question.label,
-                    style: T.title.copyWith(color: c.ink, fontSize: 17),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 2,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      Text(
+                        t.name,
+                        style: T.body.copyWith(
+                          color: c.ink,
+                          fontWeight: FontWeight.w600,
+                          fontVariations: const [FontVariation('wght', 600)],
+                        ),
+                      ),
+                      if (t.sgSpecific) const _SgChip(),
+                    ],
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    count == 0
-                        ? 'COMING SOON'
-                        : '$count ${count == 1 ? "TOOL" : "TOOLS"}',
-                    style: T.label.copyWith(
-                      color: count == 0 ? c.inkMute : c.inkMute,
-                      fontSize: 11,
-                    ),
+                    t.description,
+                    style: T.bodySm.copyWith(color: c.inkMute),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
             ),
-            Icon(Icons.chevron_right, size: 20, color: c.inkMute),
+            const SizedBox(width: S.xs),
+            Icon(Icons.chevron_right_rounded, size: 22, color: c.inkMute),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SgChip extends StatelessWidget {
+  const _SgChip();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Tooltip(
+      message: 'Uses Singapore rules',
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(color: c.accentSoft, borderRadius: R.pill),
+        child: Text(
+          'SG',
+          style: T.label.copyWith(color: c.accent, fontSize: 10),
         ),
       ),
     );
@@ -336,8 +570,8 @@ class _RecentCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  scenario.headlineLabel,
-                  style: T.label.copyWith(color: c.inkMute, fontSize: 10),
+                  scenario.name,
+                  style: T.bodySm.copyWith(color: c.inkMute),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -398,6 +632,7 @@ class CategoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.c;
     final tools = calculatorsFor(question);
+    final hue = questionHue(context, question);
 
     return Scaffold(
       backgroundColor: c.ground,
@@ -407,97 +642,35 @@ class CategoryScreen extends StatelessWidget {
         scrolledUnderElevation: 0,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: c.ink),
+          tooltip: 'Back',
+          icon: Icon(Icons.arrow_back_rounded, color: c.ink),
           onPressed: () => Navigator.pop(context),
         ),
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(S.margin, 0, S.margin, S.xl),
         children: [
-          Text(question.label, style: T.display.copyWith(color: c.ink)),
-          const SizedBox(height: S.sm),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: IconTile(icon: questionIcons[question]!, hue: hue, size: 52),
+          ),
+          const SizedBox(height: S.md),
+          Text(
+            question.label,
+            style: T.display.copyWith(color: c.ink, fontSize: 30, height: 1.15),
+          ),
+          const SizedBox(height: S.xs),
           Text(
             tools.isEmpty
                 ? 'Not built yet.'
-                : '${tools.length} ${tools.length == 1 ? "tool" : "tools"}. Every result saves.',
+                : '${question.blurb}. ${tools.length} ${tools.length == 1 ? "calculator" : "calculators"}.',
             style: T.body.copyWith(color: c.inkMute),
           ),
-          const SizedBox(height: S.lg),
+          const SizedBox(height: S.xl),
           for (final t in tools)
-            GestureDetector(
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => CalculatorScreen(calculator: t, app: app),
-                ),
-              ),
-              behavior: HitTestBehavior.opaque,
-              child: Column(
-                children: [
-                  SizedBox(
-                    height: 64,
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Row(
-                                children: [
-                                  Flexible(
-                                    child: Text(
-                                      t.name,
-                                      style: T.body.copyWith(
-                                        color: c.ink,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  if (t.sgSpecific) ...[
-                                    const SizedBox(width: 6),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 5,
-                                        vertical: 1,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: c.accentSoft,
-                                        borderRadius: R.pill,
-                                      ),
-                                      child: Text(
-                                        'SG',
-                                        style: T.label.copyWith(
-                                          color: c.accent,
-                                          fontSize: 9,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                t.description,
-                                style: T.label.copyWith(
-                                  color: c.inkMute,
-                                  fontSize: 11,
-                                  letterSpacing: 0,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(Icons.chevron_right, size: 18, color: c.inkMute),
-                      ],
-                    ),
-                  ),
-                  const Hairline(),
-                ],
-              ),
+            Padding(
+              padding: const EdgeInsets.only(bottom: S.md),
+              child: ToolTile(calculator: t, app: app),
             ),
         ],
       ),
@@ -531,7 +704,7 @@ class SavedTab extends StatelessWidget {
     final earlier = all.where((s) => !s.isThisWeek).toList();
 
     return ListView(
-      padding: const EdgeInsets.fromLTRB(S.margin, S.sm, S.margin, S.xl),
+      padding: const EdgeInsets.fromLTRB(S.margin, S.md, S.margin, S.xl),
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -541,6 +714,12 @@ class SavedTab extends StatelessWidget {
             const SizedBox(width: S.sm),
             Text('${all.length}', style: T.figure.copyWith(color: c.inkMute)),
           ],
+        ),
+        const SizedBox(height: S.xs),
+        Text(
+          'Tap Compare on two or three to see them side by side. '
+          'Swipe left to delete.',
+          style: T.bodySm.copyWith(color: c.inkMute),
         ),
         if (thisWeek.isNotEmpty) ...[
           const SectionLabel('This week'),
@@ -590,18 +769,29 @@ class _ScenarioCard extends StatelessWidget {
           decoration: BoxDecoration(
             color: c.surface,
             borderRadius: R.card,
-            border: Border.all(color: selected ? c.accent : c.line),
+            border: Border.all(
+              color: selected ? c.accent : c.line,
+              width: selected ? 1.6 : 1,
+            ),
+            boxShadow: softShadow(context),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
+                  if (calc != null) ...[
+                    IconTile(
+                      icon: calculatorIcon(calc),
+                      hue: questionHue(context, calc.question),
+                      size: 30,
+                    ),
+                    const SizedBox(width: S.sm),
+                  ],
                   Expanded(
                     child: Text(
-                      calc?.name.toUpperCase() ??
-                          scenario.calculatorId.toUpperCase(),
-                      style: T.label.copyWith(color: c.inkMute, fontSize: 10),
+                      calc?.name ?? scenario.calculatorId,
+                      style: T.bodySm.copyWith(color: c.inkMute),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -609,7 +799,7 @@ class _ScenarioCard extends StatelessWidget {
                   if (isExample)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
+                        horizontal: 6,
                         vertical: 1,
                       ),
                       decoration: BoxDecoration(
@@ -623,7 +813,7 @@ class _ScenarioCard extends StatelessWidget {
                     ),
                 ],
               ),
-              const SizedBox(height: S.xs),
+              const SizedBox(height: S.sm),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -633,6 +823,7 @@ class _ScenarioCard extends StatelessWidget {
                       style: T.body.copyWith(
                         color: c.ink,
                         fontWeight: FontWeight.w600,
+                        fontVariations: const [FontVariation('wght', 600)],
                       ),
                       maxLines: 2,
                     ),
@@ -640,37 +831,36 @@ class _ScenarioCard extends StatelessWidget {
                   const SizedBox(width: S.sm),
                   Text(
                     scenario.headlineValue,
-                    style: T.figure.copyWith(color: c.ink),
+                    style: T.figure.copyWith(
+                      color: isExample ? c.ink.withValues(alpha: 0.55) : c.ink,
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: S.md),
-              const Hairline(),
-              const SizedBox(height: S.sm),
               Row(
                 children: [
                   Expanded(
                     child: Text(
                       scenario.relativeTime,
-                      style: T.figureSm.copyWith(
-                        color: c.inkMute,
-                        fontSize: 11,
-                      ),
+                      style: T.bodySm.copyWith(color: c.inkMute),
                     ),
                   ),
-                  GestureDetector(
-                    onTap: () => app.toggleCompare(scenario.id),
-                    child: Text(
-                      selected ? 'In compare' : 'Compare',
-                      style: T.label.copyWith(
-                        color: selected ? c.accent : c.accent,
-                        fontSize: 11,
-                      ),
-                    ),
+                  _SmallPill(
+                    label: selected ? 'In compare' : 'Compare',
+                    icon: selected ? Icons.check_rounded : Icons.add_rounded,
+                    active: selected,
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      app.toggleCompare(scenario.id);
+                    },
                   ),
-                  const SizedBox(width: S.lg),
-                  if (calc != null)
-                    GestureDetector(
+                  if (calc != null) ...[
+                    const SizedBox(width: S.sm),
+                    _SmallPill(
+                      label: 'Open',
+                      icon: Icons.arrow_forward_rounded,
+                      filled: true,
                       onTap: () => Navigator.of(context).push(
                         MaterialPageRoute<void>(
                           builder: (_) => CalculatorScreen(
@@ -680,12 +870,66 @@ class _ScenarioCard extends StatelessWidget {
                           ),
                         ),
                       ),
-                      child: Text(
-                        'OPEN',
-                        style: T.label.copyWith(color: c.accent, fontSize: 11),
-                      ),
                     ),
+                  ],
                 ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SmallPill extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback onTap;
+  final bool active;
+  final bool filled;
+  const _SmallPill({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+    this.active = false,
+    this.filled = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    final fg = filled
+        ? (context.isDark ? c.ground : Colors.white)
+        : (active ? c.accent : c.ink);
+    return Semantics(
+      button: true,
+      label: label,
+      excludeSemantics: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 34,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: filled ? c.accent : (active ? c.accentSoft : c.surface),
+            borderRadius: R.pill,
+            border: filled
+                ? null
+                : Border.all(color: active ? c.accent : c.line),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 16, color: fg),
+              const SizedBox(width: 4),
+              Text(
+                label,
+                style: T.bodySm.copyWith(
+                  color: fg,
+                  fontWeight: FontWeight.w600,
+                  fontVariations: const [FontVariation('wght', 600)],
+                ),
               ),
             ],
           ),
@@ -739,23 +983,22 @@ class SettingsTab extends StatelessWidget {
           ),
           const SizedBox(height: S.md),
           Container(
-            padding: const EdgeInsets.all(S.md),
+            padding: const EdgeInsets.all(S.md + 2),
             decoration: BoxDecoration(
               borderRadius: R.input,
-              color: c.warn.withValues(alpha: 0.08),
-              border: Border(left: BorderSide(color: c.warn, width: 2)),
+              color: c.warn.withValues(alpha: context.isDark ? 0.14 : 0.08),
             ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.schedule, size: 15, color: c.warn),
+                Icon(Icons.schedule_rounded, size: 18, color: c.warn),
                 const SizedBox(width: S.sm),
                 Expanded(
                   child: Text(
                     'Rules last verified ${r.verifiedOn.day} '
-                    '${monthYear(r.verifiedOn)} (${r.daysSinceVerified} days ago). '
+                    '${monthYear(r.verifiedOn)} (${r.daysSinceVerified} ${r.daysSinceVerified == 1 ? "day" : "days"} ago). '
                     'Check MAS, IRAS and the CPF Board before relying on these.',
-                    style: T.bodySm.copyWith(color: c.warn),
+                    style: T.bodySm.copyWith(color: c.ink, height: 1.45),
                   ),
                 ),
               ],
@@ -791,8 +1034,8 @@ class SettingsTab extends StatelessWidget {
                     child: GestureDetector(
                       onTap: () => app.setBasisThemeMode(m),
                       child: Container(
-                        height: 28,
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        height: 34,
+                        padding: const EdgeInsets.symmetric(horizontal: 14),
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: app.themeMode == m
@@ -804,9 +1047,12 @@ class SettingsTab extends StatelessWidget {
                           ),
                         ),
                         child: Text(
-                          m.name,
-                          style: T.figureSm.copyWith(
-                            color: app.themeMode == m ? c.accent : c.inkMute,
+                          '${m.name[0].toUpperCase()}${m.name.substring(1)}',
+                          style: T.bodySm.copyWith(
+                            color: app.themeMode == m ? c.accent : c.ink,
+                            fontWeight: app.themeMode == m
+                                ? FontWeight.w600
+                                : FontWeight.w500,
                           ),
                         ),
                       ),
@@ -817,9 +1063,9 @@ class SettingsTab extends StatelessWidget {
           ),
           const SectionLabel('About'),
           Text(
-            'Basis computes in integer cents and solves rates with Newton–Raphson '
-            'backed by bisection. Where a value cannot be determined it says so '
-            'rather than showing a plausible number.',
+            'Basis works to the exact cent and never guesses. If a figure '
+            'cannot be worked out from what you entered, it tells you why '
+            'instead of showing a number that only looks right.',
             style: T.bodySm.copyWith(color: c.inkMute),
           ),
           const SizedBox(height: S.sm),
@@ -945,8 +1191,16 @@ class _RuleRow extends StatelessWidget {
           child: Row(
             children: [
               Expanded(
-                child: Text(label, style: T.body.copyWith(color: c.ink)),
+                child: Row(
+                  children: [
+                    Flexible(
+                      child: Text(label, style: T.body.copyWith(color: c.ink)),
+                    ),
+                    if (glossaryFor(label) case final term?) InfoButton(term),
+                  ],
+                ),
               ),
+              const SizedBox(width: S.sm),
               Text(value, style: T.figure.copyWith(color: c.ink)),
             ],
           ),
@@ -974,7 +1228,15 @@ class _Empty extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 56, color: c.line),
+            Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                color: c.accentSoft,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 34, color: c.accent),
+            ),
             const SizedBox(height: S.lg),
             Text(title, style: T.title.copyWith(color: c.ink)),
             const SizedBox(height: S.sm),
@@ -984,6 +1246,35 @@ class _Empty extends StatelessWidget {
               style: T.body.copyWith(color: c.inkMute),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The app-icon mark: a green rounded square with a "B".
+class _BrandTile extends StatelessWidget {
+  const _BrandTile();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.c;
+    return Container(
+      width: 30,
+      height: 30,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: c.accent,
+        borderRadius: BorderRadius.circular(9),
+      ),
+      child: Text(
+        'B',
+        style: T.title.copyWith(
+          fontSize: 17,
+          height: 1,
+          color: context.isDark ? c.ground : Colors.white,
+          fontWeight: FontWeight.w700,
+          fontVariations: const [FontVariation('wght', 700)],
         ),
       ),
     );

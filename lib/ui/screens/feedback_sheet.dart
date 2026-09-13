@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../feedback.dart';
+import '../components.dart';
 import '../theme.dart';
 
 /// The feedback form.
@@ -111,7 +112,7 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
   Widget build(BuildContext context) {
     final c = widget.colors;
     return Container(
-      decoration: BoxDecoration(color: c.ground, borderRadius: R.sheet),
+      decoration: BoxDecoration(color: c.surface, borderRadius: R.sheet),
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
@@ -147,7 +148,14 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
     ),
     const SizedBox(height: S.lg),
 
-    Text('WHAT IS THIS ABOUT', style: T.label.copyWith(color: c.inkMute)),
+    Text(
+      'What is this about?',
+      style: T.body.copyWith(
+        color: c.ink,
+        fontWeight: FontWeight.w600,
+        fontVariations: const [FontVariation('wght', 600)],
+      ),
+    ),
     const SizedBox(height: S.sm),
     Wrap(
       spacing: S.sm,
@@ -156,22 +164,30 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
         for (final cat in FeedbackCategory.values)
           GestureDetector(
             onTap: () => setState(() => _category = cat),
-            child: Container(
-              height: 32,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: cat == _category ? c.accentSoft : c.surface,
-                borderRadius: R.pill,
-                border: Border.all(color: cat == _category ? c.accent : c.line),
-              ),
-              child: Text(
-                cat.label,
-                style: T.figureSm.copyWith(
-                  color: cat == _category ? c.accent : c.inkMute,
-                  fontWeight: cat == _category
-                      ? FontWeight.w600
-                      : FontWeight.w500,
+            // Sized to its label: inside a Wrap, a centred Container would
+            // otherwise stretch to the full width.
+            child: IntrinsicWidth(
+              child: Container(
+                height: 40,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: cat == _category ? c.accentSoft : c.ground,
+                  borderRadius: R.pill,
+                  border: Border.all(
+                    color: cat == _category ? c.accent : c.line,
+                    width: cat == _category ? 1.6 : 1,
+                  ),
+                ),
+                child: Text(
+                  cat.label,
+                  style: T.body.copyWith(
+                    fontSize: 14,
+                    color: cat == _category ? c.accent : c.ink,
+                    fontWeight: cat == _category
+                        ? FontWeight.w600
+                        : FontWeight.w500,
+                  ),
                 ),
               ),
             ),
@@ -184,13 +200,17 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
       children: [
         Expanded(
           child: Text(
-            'HOW IS IT WORKING FOR YOU',
-            style: T.label.copyWith(color: c.inkMute),
+            'How is Basis working for you?',
+            style: T.body.copyWith(
+              color: c.ink,
+              fontWeight: FontWeight.w600,
+              fontVariations: const [FontVariation('wght', 600)],
+            ),
           ),
         ),
         Text(
-          _rating == null ? 'Optional' : '$_rating/5',
-          style: T.figureSm.copyWith(color: c.inkMute),
+          _rating == null ? 'Optional' : '$_rating of 5',
+          style: T.bodySm.copyWith(color: c.inkMute),
         ),
       ],
     ),
@@ -206,16 +226,26 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
                 margin: EdgeInsets.only(right: i == 5 ? 0 : S.sm),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: (_rating ?? 0) >= i ? c.accentSoft : c.surface,
+                  color: (_rating ?? 0) >= i
+                      ? c.warn.withValues(alpha: 0.12)
+                      : c.ground,
                   borderRadius: R.input,
                   border: Border.all(
-                    color: (_rating ?? 0) >= i ? c.accent : c.line,
+                    color: (_rating ?? 0) >= i
+                        ? c.warn.withValues(alpha: 0.5)
+                        : c.line,
                   ),
                 ),
-                child: Text(
-                  '$i',
-                  style: T.figure.copyWith(
-                    color: (_rating ?? 0) >= i ? c.accent : c.inkMute,
+                child: Semantics(
+                  label: '$i of 5 stars',
+                  button: true,
+                  excludeSemantics: true,
+                  child: Icon(
+                    (_rating ?? 0) >= i
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
+                    size: 24,
+                    color: (_rating ?? 0) >= i ? c.warn : c.inkMute,
                   ),
                 ),
               ),
@@ -225,11 +255,18 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
     ),
 
     const SizedBox(height: S.lg),
-    Text('MESSAGE', style: T.label.copyWith(color: c.inkMute)),
+    Text(
+      'Your message',
+      style: T.body.copyWith(
+        color: c.ink,
+        fontWeight: FontWeight.w600,
+        fontVariations: const [FontVariation('wght', 600)],
+      ),
+    ),
     const SizedBox(height: S.sm),
     Container(
       decoration: BoxDecoration(
-        color: c.surface,
+        color: c.ground,
         borderRadius: R.input,
         border: Border.all(color: c.line),
       ),
@@ -255,30 +292,16 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
       '(${widget.rulesetVersion})'
       '${widget.calculatorId != null ? " and which calculator you were on" : ""}. '
       'Nothing that identifies you, and none of your figures.',
-      style: T.label.copyWith(
-        color: c.inkMute,
-        letterSpacing: 0,
-        fontSize: 11.5,
-      ),
+      style: T.bodySm.copyWith(color: c.inkMute),
     ),
 
     const SizedBox(height: S.lg),
-    GestureDetector(
-      onTap: _send,
-      child: Container(
-        height: 48,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          borderRadius: R.input,
-          color: _canSend ? c.accent : c.line,
-        ),
-        child: Text(
-          _busy ? 'Sending…' : 'Send feedback',
-          style: T.body.copyWith(
-            color: _canSend ? c.ground : c.inkMute,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+    SizedBox(
+      width: double.infinity,
+      child: BasisButton(
+        label: _busy ? 'Sending…' : 'Send feedback',
+        icon: Icons.send_rounded,
+        onTap: _canSend ? _send : null,
       ),
     ),
   ];
@@ -303,30 +326,56 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
         padding: const EdgeInsets.all(S.md),
         decoration: BoxDecoration(
           borderRadius: R.input,
-          color: tone.withValues(alpha: 0.08),
-          border: Border(left: BorderSide(color: tone, width: 2)),
+          color: tone.withValues(alpha: 0.1),
         ),
-        child: Text(
-          rejected
-              ? 'The message was empty.'
-              : sent
-              ? 'Your message reached us. Nothing else to do.'
-              : 'There is no feedback endpoint configured in this build, '
-                    'so your message is queued on this device. Copy it below '
-                    'and send it however you like — it will also go out '
-                    'automatically once an endpoint is set.',
-          style: T.bodySm.copyWith(color: tone),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(
+              rejected
+                  ? Icons.info_outline_rounded
+                  : sent
+                  ? Icons.check_circle_outline_rounded
+                  : Icons.schedule_send_outlined,
+              size: 20,
+              color: tone,
+            ),
+            const SizedBox(width: S.md),
+            Expanded(
+              child: Text(
+                rejected
+                    ? 'The message was empty.'
+                    : sent
+                    ? 'Your message reached us. Nothing else to do.'
+                    : widget.service.canSend
+                    ? 'It could not be sent just now, so it is saved on this '
+                          'device and will be sent the next time you open '
+                          'Basis. You can also copy it below.'
+                    : 'Sending is not set up in this version, so your message '
+                          'is saved on this device. Copy it below and send it '
+                          'however you like.',
+                style: T.body.copyWith(color: c.ink, height: 1.45),
+              ),
+            ),
+          ],
         ),
       ),
       if (_submitted != null) ...[
         const SizedBox(height: S.lg),
-        Text('YOUR MESSAGE', style: T.label.copyWith(color: c.inkMute)),
+        Text(
+          'Your message',
+          style: T.body.copyWith(
+            color: c.ink,
+            fontWeight: FontWeight.w600,
+            fontVariations: const [FontVariation('wght', 600)],
+          ),
+        ),
         const SizedBox(height: S.sm),
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(S.md),
           decoration: BoxDecoration(
-            color: c.surface,
+            color: c.ground,
             borderRadius: R.input,
             border: Border.all(color: c.line),
           ),
@@ -341,46 +390,20 @@ class _FeedbackSheetState extends State<_FeedbackSheet> {
         children: [
           if (!sent && !rejected) ...[
             Expanded(
-              child: GestureDetector(
+              child: BasisButton(
+                label: 'Copy',
+                icon: Icons.copy_rounded,
+                filled: false,
                 onTap: _copy,
-                child: Container(
-                  height: 48,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    borderRadius: R.input,
-                    border: Border.all(color: c.line),
-                  ),
-                  child: Text(
-                    'Copy',
-                    style: T.body.copyWith(
-                      color: c.ink,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
               ),
             ),
             const SizedBox(width: S.md),
           ],
           Expanded(
             flex: 2,
-            child: GestureDetector(
+            child: BasisButton(
+              label: 'Done',
               onTap: () => Navigator.of(context).maybePop(),
-              child: Container(
-                height: 48,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  borderRadius: R.input,
-                  color: c.accent,
-                ),
-                child: Text(
-                  'Done',
-                  style: T.body.copyWith(
-                    color: c.ground,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
             ),
           ),
         ],

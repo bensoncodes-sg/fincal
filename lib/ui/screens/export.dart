@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/calculator.dart';
+import '../components.dart';
 import '../theme.dart';
 import '../../platform/save_text_io.dart'
     if (dart.library.js_interop) '../../platform/save_text_web.dart';
@@ -167,7 +168,7 @@ class _ExportSheetState extends State<_ExportSheet> {
   Widget build(BuildContext context) {
     final c = widget.colors;
     return Container(
-      decoration: BoxDecoration(color: c.ground, borderRadius: R.sheet),
+      decoration: BoxDecoration(color: c.surface, borderRadius: R.sheet),
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.72,
       ),
@@ -193,14 +194,21 @@ class _ExportSheetState extends State<_ExportSheet> {
           ),
           const SizedBox(height: S.lg),
 
-          Text('PREVIEW', style: T.label.copyWith(color: c.inkMute)),
+          Text(
+            'Preview',
+            style: T.body.copyWith(
+              color: c.ink,
+              fontWeight: FontWeight.w600,
+              fontVariations: const [FontVariation('wght', 600)],
+            ),
+          ),
           const SizedBox(height: S.sm),
           Flexible(
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(S.md),
               decoration: BoxDecoration(
-                color: c.surface,
+                color: c.ground,
                 borderRadius: R.input,
                 border: Border.all(color: c.line),
               ),
@@ -222,21 +230,25 @@ class _ExportSheetState extends State<_ExportSheet> {
               padding: const EdgeInsets.all(S.md),
               decoration: BoxDecoration(
                 borderRadius: R.input,
-                color: (_failed ? c.negative : c.accent).withValues(
-                  alpha: 0.08,
-                ),
-                border: Border(
-                  left: BorderSide(
-                    color: _failed ? c.negative : c.accent,
-                    width: 2,
-                  ),
-                ),
+                color: (_failed ? c.negative : c.accent).withValues(alpha: 0.1),
               ),
-              child: SelectableText(
-                _status!,
-                style: T.figureSm.copyWith(
-                  color: _failed ? c.negative : c.accent,
-                ),
+              child: Row(
+                children: [
+                  Icon(
+                    _failed
+                        ? Icons.error_outline_rounded
+                        : Icons.check_circle_outline_rounded,
+                    size: 20,
+                    color: _failed ? c.negative : c.accent,
+                  ),
+                  const SizedBox(width: S.md),
+                  Expanded(
+                    child: SelectableText(
+                      _status!,
+                      style: T.body.copyWith(color: c.ink),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -245,45 +257,20 @@ class _ExportSheetState extends State<_ExportSheet> {
           Row(
             children: [
               Expanded(
-                child: GestureDetector(
+                child: BasisButton(
+                  label: kSaveIsDownload ? 'Download' : 'Save file',
+                  icon: Icons.download_rounded,
+                  filled: false,
                   onTap: _writeFile,
-                  child: Container(
-                    height: 48,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      borderRadius: R.input,
-                      border: Border.all(color: c.line),
-                    ),
-                    child: Text(
-                      kSaveIsDownload ? 'Download CSV' : 'Save file',
-                      style: T.body.copyWith(
-                        color: c.ink,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
                 ),
               ),
               const SizedBox(width: S.md),
               Expanded(
                 flex: 2,
-                child: GestureDetector(
+                child: BasisButton(
+                  label: 'Copy for a spreadsheet',
+                  icon: Icons.copy_rounded,
                   onTap: _copy,
-                  child: Container(
-                    height: 48,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      borderRadius: R.input,
-                      color: c.accent,
-                    ),
-                    child: Text(
-                      'Copy CSV',
-                      style: T.body.copyWith(
-                        color: c.ground,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
                 ),
               ),
             ],
