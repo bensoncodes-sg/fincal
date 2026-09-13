@@ -126,8 +126,10 @@ class _InputRowState extends State<InputRow> {
         // focus places its own caret first.
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted || !_node.hasFocus) return;
-          _ctl.selection =
-              TextSelection(baseOffset: 0, extentOffset: _ctl.text.length);
+          _ctl.selection = TextSelection(
+            baseOffset: 0,
+            extentOffset: _ctl.text.length,
+          );
         });
       } else {
         // On losing focus, snap the text back to the value actually in use.

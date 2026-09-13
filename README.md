@@ -6,6 +6,24 @@ Financial calculators for Singapore. Flutter + Dart, no plugins.
 cd C:/basis && flutter run -d chrome
 ```
 
+## Intro tour
+
+First launch shows a 10-step guided tour (`lib/ui/tour.dart`). It dims the
+app and spotlights one real element at a time — the question groups, recent
+scenarios, a calculator's result, inputs, "Show the math" and save bar, then
+the Saved, Compare and Settings tabs — with **Back / Next / Skip**. It opens
+the Mortgage calculator and switches tabs itself, so each tip points at the
+thing it describes.
+
+- Elements opt in with `TourTarget(id: ...)`; a missing target centres the card
+  instead of breaking the tour.
+- Seen once, remembered (`prefs.json` on phones, localStorage on the web);
+  **Settings → Replay the app tour** runs it again.
+- Android back and browser back step the tour back; arrow keys and Escape
+  work on desktop; taps outside the card never reach the app underneath.
+- `test/tour_test.dart` walks all 10 steps on an iPhone-sized screen and fails
+  if any spotlight finds nothing or lands off screen.
+
 ## On the web (for iPhone users)
 
 The same code builds for the browser, so it runs on an iPhone in Safari with no
@@ -47,7 +65,7 @@ save, reload, reopen, export.
 build pins Flutter 3.44.4 and runs `flutter test` first, so a failing test
 stops the deploy.
 
-Tests: `flutter test` — 354 passing, plus the web parity check below. Golden coverage: every one of the 19
+Tests: `flutter test` — 368 passing, plus the web parity check below. Golden coverage: every one of the 19
 calculators has a golden file, 49 of 49 cases captured with named provenance.
 
 ## The architectural bet

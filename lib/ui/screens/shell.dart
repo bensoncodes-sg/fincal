@@ -10,6 +10,7 @@ import 'calculator_screen.dart';
 import 'compare.dart';
 import 'feedback_sheet.dart';
 import 'splash.dart';
+import '../tour.dart';
 
 class Shell extends StatefulWidget {
   final AppState app;
@@ -21,6 +22,24 @@ class Shell extends StatefulWidget {
 
 class _ShellState extends State<Shell> {
   int _tab = 0;
+  TourController? _tour;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _tour = TourScope.maybeOf(context);
+    _tour?.selectTab = _selectTab;
+  }
+
+  @override
+  void dispose() {
+    if (_tour?.selectTab == _selectTab) _tour?.selectTab = null;
+    super.dispose();
+  }
+
+  void _selectTab(int i) {
+    if (mounted) setState(() => _tab = i);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,10 +57,7 @@ class _ShellState extends State<Shell> {
             _ => HomeTab(app: widget.app),
           },
         ),
-        bottomNavigationBar: _TabBar(
-          index: _tab,
-          onChanged: (i) => setState(() => _tab = i),
-        ),
+        bottomNavigationBar: _TabBar(index: _tab, onChanged: _selectTab),
       ),
     );
   }
@@ -75,31 +91,34 @@ class _TabBar extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           for (var i = 0; i < _items.length; i++)
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => onChanged(i),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: S.md,
-                  vertical: 6,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _items[i].$1,
-                      size: 20,
-                      color: i == index ? c.accent : c.inkMute,
-                    ),
-                    const SizedBox(height: S.xs),
-                    Text(
-                      _items[i].$2.toUpperCase(),
-                      style: T.label.copyWith(
-                        fontSize: 10,
+            TourTarget(
+              id: 'tab.$i',
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onChanged(i),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: S.md,
+                    vertical: 6,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _items[i].$1,
+                        size: 20,
                         color: i == index ? c.accent : c.inkMute,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: S.xs),
+                      Text(
+                        _items[i].$2.toUpperCase(),
+                        style: T.label.copyWith(
+                          fontSize: 10,
+                          color: i == index ? c.accent : c.inkMute,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -160,29 +179,42 @@ class HomeTab extends StatelessWidget {
           style: T.body.copyWith(color: c.inkMute),
         ),
         const SizedBox(height: S.lg),
-        for (final q in Question.values)
-          Padding(
-            padding: const EdgeInsets.only(bottom: S.gutter),
-            child: _QuestionCard(
-              question: q,
-              icon: _icons[q]!,
-              count: builtCountFor(q),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => CategoryScreen(question: q, app: app),
+        TourTarget(
+          id: 'home.questions',
+          child: Column(
+            children: [
+              for (final q in Question.values)
+                Padding(
+                  padding: EdgeInsets.only(
+                    bottom: q == Question.values.last ? 0 : S.gutter,
+                  ),
+                  child: _QuestionCard(
+                    question: q,
+                    icon: _icons[q]!,
+                    count: builtCountFor(q),
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => CategoryScreen(question: q, app: app),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
+            ],
           ),
+        ),
         if (recent.isNotEmpty) ...[
           const SectionLabel('Recent'),
-          SizedBox(
-            height: 96,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: recent.length,
-              separatorBuilder: (_, _) => const SizedBox(width: S.gutter),
-              itemBuilder: (_, i) => _RecentCard(scenario: recent[i], app: app),
+          TourTarget(
+            id: 'home.recent',
+            child: SizedBox(
+              height: 96,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: recent.length,
+                separatorBuilder: (_, _) => const SizedBox(width: S.gutter),
+                itemBuilder: (_, i) =>
+                    _RecentCard(scenario: recent[i], app: app),
+              ),
             ),
           ),
         ],
@@ -680,174 +712,219 @@ class SettingsTab extends StatelessWidget {
     final c = context.c;
     final r = app.rules;
 
-    return ListView(
+    // Settings is short, so it is built all at once rather than lazily: the
+    // tour's last step points at the feedback section near the bottom, which
+    // a lazy list would not have created yet.
+    return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(S.margin, S.sm, S.margin, S.xl),
-      children: [
-        Text('Settings', style: T.display.copyWith(color: c.ink)),
-        const SectionLabel('Singapore rules'),
-        BasisCard(
-          padding: const EdgeInsets.symmetric(horizontal: S.cardPad),
-          child: Column(
-            children: [
-              _RuleRow('TDSR ceiling', pct(r.tdsrCeilingPct, dp: 0)),
-              _RuleRow('MSR ceiling (HDB/EC)', pct(r.msrCeilingPct, dp: 0)),
-              _RuleRow('Stress-test floor', pct(r.stressTestFloorPct, dp: 2)),
-              _RuleRow(
-                'CPF wage ceiling',
-                Money.fromDouble(r.cpfOrdinaryWageCeiling).sgd0,
-              ),
-              _RuleRow('GST', pct(r.gstPct, dp: 0), last: true),
-            ],
-          ),
-        ),
-        const SizedBox(height: S.md),
-        Container(
-          padding: const EdgeInsets.all(S.md),
-          decoration: BoxDecoration(
-            borderRadius: R.input,
-            color: c.warn.withValues(alpha: 0.08),
-            border: Border(left: BorderSide(color: c.warn, width: 2)),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.schedule, size: 15, color: c.warn),
-              const SizedBox(width: S.sm),
-              Expanded(
-                child: Text(
-                  'Rules last verified ${r.verifiedOn.day} '
-                  '${monthYear(r.verifiedOn)} (${r.daysSinceVerified} days ago). '
-                  'Check MAS, IRAS and the CPF Board before relying on these.',
-                  style: T.bodySm.copyWith(color: c.warn),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('Settings', style: T.display.copyWith(color: c.ink)),
+          const SectionLabel('Singapore rules'),
+          BasisCard(
+            padding: const EdgeInsets.symmetric(horizontal: S.cardPad),
+            child: Column(
+              children: [
+                _RuleRow('TDSR ceiling', pct(r.tdsrCeilingPct, dp: 0)),
+                _RuleRow('MSR ceiling (HDB/EC)', pct(r.msrCeilingPct, dp: 0)),
+                _RuleRow('Stress-test floor', pct(r.stressTestFloorPct, dp: 2)),
+                _RuleRow(
+                  'CPF wage ceiling',
+                  Money.fromDouble(r.cpfOrdinaryWageCeiling).sgd0,
                 ),
-              ),
-            ],
+                _RuleRow('GST', pct(r.gstPct, dp: 0), last: true),
+              ],
+            ),
           ),
-        ),
-        const SectionLabel('Defaults'),
-        BasisCard(
-          padding: const EdgeInsets.symmetric(horizontal: S.cardPad),
-          child: Column(
-            children: const [
-              _RuleRow('Rounding', 'Half-even, 2 d.p.'),
-              _RuleRow('Day count', '30/360'),
-              _RuleRow('Compounding', 'Monthly'),
-              _RuleRow('Rate convention', 'Nominal ÷ 12'),
-              _RuleRow('Currency', 'SGD', last: true),
-            ],
-          ),
-        ),
-        const SectionLabel('Appearance'),
-        BasisCard(
-          padding: const EdgeInsets.symmetric(
-            horizontal: S.cardPad,
-            vertical: S.md,
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text('Theme', style: T.body.copyWith(color: c.ink)),
-              ),
-              for (final m in BasisThemeMode.values)
-                Padding(
-                  padding: const EdgeInsets.only(left: 6),
-                  child: GestureDetector(
-                    onTap: () => app.setBasisThemeMode(m),
-                    child: Container(
-                      height: 28,
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: app.themeMode == m
-                            ? c.accentSoft
-                            : Colors.transparent,
-                        borderRadius: R.pill,
-                        border: Border.all(
-                          color: app.themeMode == m ? c.accent : c.line,
-                        ),
-                      ),
-                      child: Text(
-                        m.name,
-                        style: T.figureSm.copyWith(
-                          color: app.themeMode == m ? c.accent : c.inkMute,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        const SectionLabel('About'),
-        Text(
-          'Basis computes in integer cents and solves rates with Newton–Raphson '
-          'backed by bisection. Where a value cannot be determined it says so '
-          'rather than showing a plausible number.',
-          style: T.bodySm.copyWith(color: c.inkMute),
-        ),
-        const SizedBox(height: S.sm),
-        Text(
-          'SG RULESET · REV ${r.version}',
-          style: T.figureSm.copyWith(color: c.inkMute, fontSize: 11),
-        ),
-
-        const SectionLabel('Feedback'),
-        Text(
-          'If a number looks wrong, that is the most useful thing you can '
-          'tell us. Say what you entered and what you expected.',
-          style: T.bodySm.copyWith(color: c.inkMute),
-        ),
-        const SizedBox(height: S.md),
-        GestureDetector(
-          onTap: () => showFeedbackSheet(
-            context,
-            service: app.feedback,
-            rulesetVersion: r.version,
-          ),
-          child: Container(
-            height: 48,
-            alignment: Alignment.center,
+          const SizedBox(height: S.md),
+          Container(
+            padding: const EdgeInsets.all(S.md),
             decoration: BoxDecoration(
               borderRadius: R.input,
-              border: Border.all(color: c.accent),
-              color: c.accentSoft,
+              color: c.warn.withValues(alpha: 0.08),
+              border: Border(left: BorderSide(color: c.warn, width: 2)),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.chat_bubble_outline, size: 17, color: c.accent),
+                Icon(Icons.schedule, size: 15, color: c.warn),
                 const SizedBox(width: S.sm),
-                Text(
-                  'Send feedback',
-                  style: T.body.copyWith(
-                    color: c.accent,
-                    fontWeight: FontWeight.w600,
+                Expanded(
+                  child: Text(
+                    'Rules last verified ${r.verifiedOn.day} '
+                    '${monthYear(r.verifiedOn)} (${r.daysSinceVerified} days ago). '
+                    'Check MAS, IRAS and the CPF Board before relying on these.',
+                    style: T.bodySm.copyWith(color: c.warn),
                   ),
                 ),
               ],
             ),
           ),
-        ),
-        const SizedBox(height: S.sm),
-        FutureBuilder<int>(
-          future: app.feedback.pending().then((p) => p.length),
-          builder: (context, snap) {
-            final n = snap.data ?? 0;
-            if (n == 0) return const SizedBox.shrink();
-            // Saying "sent" when nothing left the device would be a lie, so
-            // the queue is shown instead.
-            return Text(
-              '$n message${n == 1 ? "" : "s"} waiting on this device — no '
-              'feedback endpoint is configured in this build.',
-              style: T.label.copyWith(
-                color: c.warn,
-                letterSpacing: 0,
-                fontSize: 11.5,
-              ),
-            );
-          },
-        ),
-      ],
+          const SectionLabel('Defaults'),
+          BasisCard(
+            padding: const EdgeInsets.symmetric(horizontal: S.cardPad),
+            child: Column(
+              children: const [
+                _RuleRow('Rounding', 'Half-even, 2 d.p.'),
+                _RuleRow('Day count', '30/360'),
+                _RuleRow('Compounding', 'Monthly'),
+                _RuleRow('Rate convention', 'Nominal ÷ 12'),
+                _RuleRow('Currency', 'SGD', last: true),
+              ],
+            ),
+          ),
+          const SectionLabel('Appearance'),
+          BasisCard(
+            padding: const EdgeInsets.symmetric(
+              horizontal: S.cardPad,
+              vertical: S.md,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text('Theme', style: T.body.copyWith(color: c.ink)),
+                ),
+                for (final m in BasisThemeMode.values)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 6),
+                    child: GestureDetector(
+                      onTap: () => app.setBasisThemeMode(m),
+                      child: Container(
+                        height: 28,
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: app.themeMode == m
+                              ? c.accentSoft
+                              : Colors.transparent,
+                          borderRadius: R.pill,
+                          border: Border.all(
+                            color: app.themeMode == m ? c.accent : c.line,
+                          ),
+                        ),
+                        child: Text(
+                          m.name,
+                          style: T.figureSm.copyWith(
+                            color: app.themeMode == m ? c.accent : c.inkMute,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SectionLabel('About'),
+          Text(
+            'Basis computes in integer cents and solves rates with Newton–Raphson '
+            'backed by bisection. Where a value cannot be determined it says so '
+            'rather than showing a plausible number.',
+            style: T.bodySm.copyWith(color: c.inkMute),
+          ),
+          const SizedBox(height: S.sm),
+          Text(
+            'SG RULESET · REV ${r.version}',
+            style: T.figureSm.copyWith(color: c.inkMute, fontSize: 11),
+          ),
+
+          const SectionLabel('Feedback'),
+          Text(
+            'If a number looks wrong, that is the most useful thing you can '
+            'tell us. Say what you entered and what you expected.',
+            style: T.bodySm.copyWith(color: c.inkMute),
+          ),
+          const SizedBox(height: S.md),
+          TourTarget(
+            id: 'settings.help',
+            child: Column(
+              children: [
+                GestureDetector(
+                  onTap: () => showFeedbackSheet(
+                    context,
+                    service: app.feedback,
+                    rulesetVersion: r.version,
+                  ),
+                  child: Container(
+                    height: 48,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: R.input,
+                      border: Border.all(color: c.accent),
+                      color: c.accentSoft,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.chat_bubble_outline,
+                          size: 17,
+                          color: c.accent,
+                        ),
+                        const SizedBox(width: S.sm),
+                        Text(
+                          'Send feedback',
+                          style: T.body.copyWith(
+                            color: c.accent,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (TourScope.maybeOf(context) != null) ...[
+                  const SizedBox(height: S.sm),
+                  GestureDetector(
+                    onTap: () => TourScope.maybeOf(context)?.start(),
+                    child: Container(
+                      height: 48,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        borderRadius: R.input,
+                        border: Border.all(color: c.line),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.explore_outlined, size: 17, color: c.ink),
+                          const SizedBox(width: S.sm),
+                          Text(
+                            'Replay the app tour',
+                            style: T.body.copyWith(
+                              color: c.ink,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: S.sm),
+          FutureBuilder<int>(
+            future: app.feedback.pending().then((p) => p.length),
+            builder: (context, snap) {
+              final n = snap.data ?? 0;
+              if (n == 0) return const SizedBox.shrink();
+              // Saying "sent" when nothing left the device would be a lie, so
+              // the queue is shown instead.
+              return Text(
+                '$n message${n == 1 ? "" : "s"} waiting on this device — no '
+                'feedback endpoint is configured in this build.',
+                style: T.label.copyWith(
+                  color: c.warn,
+                  letterSpacing: 0,
+                  fontSize: 11.5,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }

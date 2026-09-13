@@ -7,6 +7,7 @@ import '../../state.dart';
 import '../components.dart';
 import '../theme.dart';
 import 'export.dart';
+import '../tour.dart';
 
 /// THE renderer.
 ///
@@ -91,7 +92,10 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(S.margin, 0, S.margin, S.xl),
         children: [
-          ResultStack(result: result, isExample: _allExample),
+          TourTarget(
+            id: 'calc.result',
+            child: ResultStack(result: result, isExample: _allExample),
+          ),
 
           if (solveKey != null) ...[
             const SizedBox(height: S.md),
@@ -122,28 +126,31 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
 
           const SizedBox(height: S.md),
 
-          BasisCard(
+          TourTarget(
             key: const ValueKey('inputs-card'),
-            padding: const EdgeInsets.symmetric(horizontal: S.cardPad),
-            child: Column(
-              children: [
-                for (var i = 0; i < _editable.length; i++)
-                  InputRow(
-                    key: ValueKey(_editable[i].key),
-                    spec: _editable[i],
-                    value: _values[_editable[i].key] ?? _editable[i].initial,
-                    focused: _focusedKey == _editable[i].key,
-                    last: i == _editable.length - 1,
-                    isExample: !_touched.contains(_editable[i].key),
-                    onFocus: () =>
-                        setState(() => _focusedKey = _editable[i].key),
-                    // Picking an option is not supplying a figure: with every
-                    // number still seeded, the result is still an example.
-                    onChanged: (v) => _editable[i].kind == InputKind.choice
-                        ? _setMode(_editable[i].key, v)
-                        : _set(_editable[i].key, v),
-                  ),
-              ],
+            id: 'calc.inputs',
+            child: BasisCard(
+              padding: const EdgeInsets.symmetric(horizontal: S.cardPad),
+              child: Column(
+                children: [
+                  for (var i = 0; i < _editable.length; i++)
+                    InputRow(
+                      key: ValueKey(_editable[i].key),
+                      spec: _editable[i],
+                      value: _values[_editable[i].key] ?? _editable[i].initial,
+                      focused: _focusedKey == _editable[i].key,
+                      last: i == _editable.length - 1,
+                      isExample: !_touched.contains(_editable[i].key),
+                      onFocus: () =>
+                          setState(() => _focusedKey = _editable[i].key),
+                      // Picking an option is not supplying a figure: with every
+                      // number still seeded, the result is still an example.
+                      onChanged: (v) => _editable[i].kind == InputKind.choice
+                          ? _setMode(_editable[i].key, v)
+                          : _set(_editable[i].key, v),
+                    ),
+                ],
+              ),
             ),
           ),
 
@@ -186,13 +193,16 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
           if (result.explain != null) ...[
             const SizedBox(height: S.md),
             Center(
-              child: TextButton(
-                onPressed: () => _openMath(result),
-                child: Text(
-                  'Show the math',
-                  style: T.body.copyWith(
-                    color: c.accent,
-                    fontWeight: FontWeight.w600,
+              child: TourTarget(
+                id: 'calc.math',
+                child: TextButton(
+                  onPressed: () => _openMath(result),
+                  child: Text(
+                    'Show the math',
+                    style: T.body.copyWith(
+                      color: c.accent,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ),
@@ -200,23 +210,26 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
           ],
         ],
       ),
-      bottomNavigationBar: SaveBar(
-        onSave: result.error != null ? null : () => _save(result),
-        secondaryLabel: 'Export',
-        onCompare: result.error != null
-            ? null
-            : () => showExportSheet(
-                context,
-                title: widget.calculator.name,
-                csv: csvForResult(
-                  calculatorName: widget.calculator.name,
-                  inputs: widget.calculator.inputs
-                      .where((i) => i.appliesTo(_values))
-                      .toList(),
-                  values: _values,
-                  result: result,
+      bottomNavigationBar: TourTarget(
+        id: 'calc.savebar',
+        child: SaveBar(
+          onSave: result.error != null ? null : () => _save(result),
+          secondaryLabel: 'Export',
+          onCompare: result.error != null
+              ? null
+              : () => showExportSheet(
+                  context,
+                  title: widget.calculator.name,
+                  csv: csvForResult(
+                    calculatorName: widget.calculator.name,
+                    inputs: widget.calculator.inputs
+                        .where((i) => i.appliesTo(_values))
+                        .toList(),
+                    values: _values,
+                    result: result,
+                  ),
                 ),
-              ),
+        ),
       ),
     );
   }

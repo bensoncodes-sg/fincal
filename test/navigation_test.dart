@@ -9,6 +9,7 @@ import 'package:basis/ui/components.dart';
 import 'package:basis/ui/screens/calculator_screen.dart';
 import 'package:basis/ui/screens/shell.dart';
 import 'package:basis/ui/theme.dart';
+import 'package:basis/ui/tour.dart';
 
 /// Regression guard for a bug that only appeared on a real device in release.
 ///
@@ -130,7 +131,9 @@ void main() {
   });
 
   testWidgets('the whole app boots and reaches the shell', (tester) async {
-    await tester.pumpWidget(const BasisApp());
+    await tester.pumpWidget(
+      BasisApp(tourMemory: InMemoryTourMemory(seen: true)),
+    );
     await tester.pump();
     // Splash hands off on a timer; let it run out.
     await tester.pump(const Duration(milliseconds: 1800));
