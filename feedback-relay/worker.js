@@ -4,7 +4,7 @@
 // token as a SECRET and forwards a plain-text message to your chat. The token
 // never reaches the app, so nobody reading the web app's code can use it.
 //
-// Settings → Variables and Secrets:
+// Settings > Variables and Secrets:
 //   TELEGRAM_TOKEN    (Secret)  from @BotFather
 //   TELEGRAM_CHAT_ID  (Secret)  your chat id
 //   ALLOWED_ORIGINS   (Text)    e.g. https://basis-calculators.onrender.com
@@ -77,12 +77,12 @@ export default {
     const category = CATEGORIES[item.category] || CATEGORIES.other;
     const rating =
       Number.isInteger(item.rating) && item.rating >= 1 && item.rating <= 5
-        ? `${'★'.repeat(item.rating)}${'☆'.repeat(5 - item.rating)}`
+        ? `${'\u2605'.repeat(item.rating)}${'\u2606'.repeat(5 - item.rating)}`
         : null;
     const short = (v, n) => (typeof v === 'string' ? v.slice(0, n) : '');
 
     const lines = [
-      `📊 Basis feedback — ${category}`,
+      `\u{1F4CA} Basis feedback \u2014 ${category}`,
       rating ? `Rating: ${rating}` : null,
       item.calculatorId ? `Calculator: ${short(item.calculatorId, 60)}` : null,
       `Ruleset: ${short(item.rulesetVersion, 40)}`,
