@@ -1,0 +1,60 @@
+{
+  "calculator": "mortgage",
+  "status": "captured",
+  "source": "Bishinews Financial Calculators (Google Play listing screenshots), Loan Calculator screen, for the 150,000 cases. The 637,500 case is an INDEPENDENT CROSS-CHECK: INDEPENDENT CROSS-CHECK: recomputed in a separate Python implementation using exact Decimal arithmetic (a different numeric model from the app's doubles) from the published annuity formula, and it agrees to the cent. The engine is separately validated against a third-party app's published figures in external_oracle_test.dart. This pins the arithmetic; the interest convention (monthly rest, nominal/12) is an assumption stated on each result.",
+  "capturedOn": "2026-09-13",
+  "capturedBy": "claude",
+  "cases": [
+    {
+      "note": "150,000 at 3.125% over 15 years [THIRD-PARTY APP]",
+      "status": "captured",
+      "inputs": {
+        "price": 200000,
+        "loan": 150000,
+        "rate": 3.125,
+        "tenor": 15,
+        "extra": 0
+      },
+      "expect": {
+        "primary": "S$ 1,044.91",
+        "scheduleMonths": 180
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "same loan plus 100/month pays off 19 months early [THIRD-PARTY APP]",
+      "status": "captured",
+      "inputs": {
+        "price": 200000,
+        "loan": 150000,
+        "rate": 3.125,
+        "tenor": 15,
+        "extra": 100
+      },
+      "expect": {
+        "scheduleMonths": 161
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "637,500 at 3.85% over 25 years [INDEPENDENT DECIMAL RECOMPUTE]",
+      "status": "captured",
+      "inputs": {
+        "price": 850000,
+        "loan": 637500,
+        "rate": 3.85,
+        "tenor": 25,
+        "extra": 0
+      },
+      "expect": {
+        "primary": "S$ 3,312.39",
+        "secondary": {
+          "Total interest": "S$ 356,215",
+          "Total repaid": "S$ 993,715"
+        },
+        "scheduleMonths": 300
+      },
+      "toleranceCents": 1
+    }
+  ]
+}

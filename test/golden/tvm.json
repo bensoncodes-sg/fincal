@@ -1,0 +1,26 @@
+{
+  "calculator": "tvm",
+  "status": "captured",
+  "source": "Bishinews Financial Calculators TVM screen; independently reproducible with Excel PMT(0.005,240,200000)",
+  "capturedOn": "2026-09-11",
+  "capturedBy": "claude",
+  "cases": [
+    {
+      "note": "PV -200,000 at 6% over 240 periods solves PMT",
+      "status": "captured",
+      "inputs": {
+        "solve": "PMT",
+        "pv": -200000,
+        "pmt": 0,
+        "fv": 0,
+        "rate": 6.0,
+        "n": 240,
+        "due": "End of period"
+      },
+      "expect": {
+        "primary": "S$ 1,432.86"
+      },
+      "toleranceCents": 1
+    }
+  ]
+}

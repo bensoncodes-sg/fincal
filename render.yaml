@@ -1,0 +1,31 @@
+# Render Blueprint: deploys Basis as a static site.
+# In Render: New > Blueprint, point it at this repo, and it reads this file.
+services:
+  - type: web
+    name: basis-calculators
+    runtime: static
+    buildCommand: bash ./build.sh
+    staticPublishPath: build/web
+    pullRequestPreviewsEnabled: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      # Always check for a new version, so a fix reaches phones on next open
+      # instead of a cached copy with the old numbers.
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+      - path: /flutter_bootstrap.js
+        name: Cache-Control
+        value: no-cache
+      - path: /flutter_service_worker.js
+        name: Cache-Control
+        value: no-cache
+      - path: /main.dart.js
+        name: Cache-Control
+        value: no-cache

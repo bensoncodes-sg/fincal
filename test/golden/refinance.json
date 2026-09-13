@@ -1,0 +1,28 @@
+{
+  "calculator": "refinance",
+  "status": "captured",
+  "source": "INDEPENDENT CROSS-CHECK: recomputed in a separate Python implementation using exact Decimal arithmetic (a different numeric model from the app's doubles) from the published annuity formula, and it agrees to the cent. The engine is separately validated against a third-party app's published figures in external_oracle_test.dart. This pins the arithmetic; the interest convention (monthly rest, nominal/12) is an assumption stated on each result.",
+  "capturedOn": "2026-09-13",
+  "capturedBy": "claude (independent Decimal recompute)",
+  "cases": [
+    {
+      "note": "520,000 outstanding, 18 years left, 4.25% to 3.35%, 3,000 cost",
+      "status": "captured",
+      "inputs": {
+        "balance": 520000,
+        "remaining": 18,
+        "currentRate": 4.25,
+        "newRate": 3.35,
+        "cost": 3000
+      },
+      "expect": {
+        "secondary": {
+          "Monthly saving": "S$ 239.57",
+          "New instalment": "S$ 3,209.01",
+          "Net lifetime saving": "S$ 48,747"
+        }
+      },
+      "toleranceCents": 1
+    }
+  ]
+}

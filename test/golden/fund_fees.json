@@ -1,0 +1,51 @@
+{
+  "calculator": "fund_fees",
+  "status": "captured",
+  "source": "Independent Python Decimal recompute: fee applied multiplicatively, net growth (1+g)(1-f), converted to an equivalent monthly rate, end-of-month contributions.",
+  "capturedOn": "2026-09-13",
+  "capturedBy": "claude (independent Decimal recompute)",
+  "cases": [
+    {
+      "note": "Seeded example: 50,000 + 500/mo, 6% gross, 1.5% fees, 20 yr",
+      "status": "captured",
+      "inputs": {
+        "initial": 50000,
+        "monthly": 500,
+        "gross": 6,
+        "fee": 1.5,
+        "years": 20
+      },
+      "expect": {
+        "primary": "S$ 78,347",
+        "secondary": {
+          "With no fees": "S$ 387,076",
+          "After fees": "S$ 308,729",
+          "Share of final value lost": "20.2%",
+          "Return after fees": "4.41%"
+        }
+      },
+      "toleranceCents": 100
+    },
+    {
+      "note": "Monthly only: 1,000/mo, 7% gross, 2.5% fees, 30 yr",
+      "status": "captured",
+      "inputs": {
+        "initial": 0,
+        "monthly": 1000,
+        "gross": 7,
+        "fee": 2.5,
+        "years": 30
+      },
+      "expect": {
+        "primary": "S$ 444,723",
+        "secondary": {
+          "With no fees": "S$ 1,169,453",
+          "After fees": "S$ 724,729",
+          "Share of final value lost": "38.0%",
+          "Return after fees": "4.32%"
+        }
+      },
+      "toleranceCents": 100
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "calculator": "rule_72",
+  "status": "captured",
+  "source": "Definitional arithmetic: the Rule of 72 is 72 divided by the rate. 72/6 = 12, 72/8 = 9, 72/3 = 24. The exact doubling times (ln2/ln(1+r): 11.90, 9.01, 23.45 years) are asserted separately in finance_test.dart so the approximation is never mistaken for the exact figure.",
+  "capturedOn": "2026-09-12",
+  "capturedBy": "claude (hand-derived)",
+  "cases": [
+    {
+      "note": "6% doubles in 12 years by the rule",
+      "status": "captured",
+      "inputs": {
+        "rate": 6.0
+      },
+      "expect": {
+        "primary": "12.0 years"
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "8% doubles in 9 years by the rule",
+      "status": "captured",
+      "inputs": {
+        "rate": 8.0
+      },
+      "expect": {
+        "primary": "9.0 years"
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "3% doubles in 24 years by the rule",
+      "status": "captured",
+      "inputs": {
+        "rate": 3.0
+      },
+      "expect": {
+        "primary": "24.0 years"
+      },
+      "toleranceCents": 1
+    }
+  ]
+}

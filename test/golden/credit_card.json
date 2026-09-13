@@ -1,0 +1,49 @@
+{
+  "calculator": "credit_card",
+  "status": "captured",
+  "source": "Independent Python simulation in integer cents with half-even rounding: monthly interest on the balance, payment, minimum 3% or S$50. Written separately from the Dart loop.",
+  "capturedOn": "2026-09-13",
+  "capturedBy": "claude (independent Decimal recompute)",
+  "cases": [
+    {
+      "note": "Seeded example: 8,000 at 26.9%, paying 400 a month",
+      "status": "captured",
+      "inputs": {
+        "balance": 8000,
+        "rate": 26.9,
+        "mode": "Pay a fixed amount",
+        "payment": 400
+      },
+      "expect": {
+        "primary": "27 months",
+        "secondary": {
+          "Total interest": "S$ 2,733",
+          "Total paid": "S$ 10,733",
+          "Minimum-only time": "252 months",
+          "Minimum-only interest": "S$ 18,626"
+        }
+      },
+      "toleranceCents": 100
+    },
+    {
+      "note": "Clear 5,000 at 25.9% within 12 months",
+      "status": "captured",
+      "inputs": {
+        "balance": 5000,
+        "rate": 25.9,
+        "mode": "Clear it by a date",
+        "months": 12
+      },
+      "expect": {
+        "primary": "S$ 477.41",
+        "secondary": {
+          "Total interest": "S$ 729",
+          "Total paid": "S$ 5,729",
+          "Minimum-only time": "181 months",
+          "Minimum-only interest": "S$ 9,242"
+        }
+      },
+      "toleranceCents": 100
+    }
+  ]
+}

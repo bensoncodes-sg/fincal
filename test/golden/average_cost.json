@@ -1,0 +1,51 @@
+{
+  "calculator": "average_cost",
+  "status": "captured",
+  "source": "Hand-derived weighted average cost, then Python Decimal recompute: (held x price + bought x price + one fee) / shares; break-even adds one selling fee.",
+  "capturedOn": "2026-09-13",
+  "capturedBy": "claude (independent Decimal recompute)",
+  "cases": [
+    {
+      "note": "Seeded example: 1,000 @ 1.20, buy 500 @ 0.955, S$10 fee",
+      "status": "captured",
+      "inputs": {
+        "held": 1000,
+        "heldPrice": 1.2,
+        "buy": 500,
+        "buyPrice": 0.955,
+        "fee": 10
+      },
+      "expect": {
+        "primary": "S$ 1.1250",
+        "secondary": {
+          "Total shares": "1500",
+          "Total cost": "S$ 1,687.50",
+          "Break-even selling price": "S$ 1.1317",
+          "Change in average": "-6.25%"
+        }
+      },
+      "toleranceCents": 100
+    },
+    {
+      "note": "Averaging up: 300 @ 3.42, buy 700 @ 4.105, S$25 fee",
+      "status": "captured",
+      "inputs": {
+        "held": 300,
+        "heldPrice": 3.42,
+        "buy": 700,
+        "buyPrice": 4.105,
+        "fee": 25
+      },
+      "expect": {
+        "primary": "S$ 3.9245",
+        "secondary": {
+          "Total shares": "1000",
+          "Total cost": "S$ 3,924.50",
+          "Break-even selling price": "S$ 3.9495",
+          "Change in average": "14.75%"
+        }
+      },
+      "toleranceCents": 100
+    }
+  ]
+}

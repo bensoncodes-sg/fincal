@@ -1,0 +1,51 @@
+{
+  "calculator": "car_loan",
+  "status": "captured",
+  "source": "Independent Python Decimal recompute: flat interest, EIR by bisection, Rule of 78 rebate = interest x k(k+1)/n(n+1), fair settlement = PV of remaining instalments at the EIR monthly rate.",
+  "capturedOn": "2026-09-13",
+  "capturedBy": "claude (independent Decimal recompute)",
+  "cases": [
+    {
+      "note": "Seeded example: 150,000 car, 60,000 down, 2.78% flat, 7 yr, settle after 36",
+      "status": "captured",
+      "inputs": {
+        "price": 150000,
+        "down": 60000,
+        "flatRate": 2.78,
+        "tenure": 7,
+        "settleAfter": 36
+      },
+      "expect": {
+        "primary": "S$ 1,279.93",
+        "secondary": {
+          "Total interest": "S$ 17,514",
+          "Effective rate": "5.31%",
+          "Settle after 36": "S$ 55,667",
+          "Rule of 78 costs": "S$ 292"
+        }
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "Run to term: 98,000 car, 30,000 down, 2.48% flat, 5 yr",
+      "status": "captured",
+      "inputs": {
+        "price": 98000,
+        "down": 30000,
+        "flatRate": 2.48,
+        "tenure": 5,
+        "settleAfter": 0
+      },
+      "expect": {
+        "primary": "S$ 1,273.87",
+        "secondary": {
+          "Total interest": "S$ 8,432",
+          "Effective rate": "4.80%",
+          "Loan amount": "S$ 68,000",
+          "Total repaid": "S$ 76,432"
+        }
+      },
+      "toleranceCents": 1
+    }
+  ]
+}

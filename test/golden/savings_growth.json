@@ -1,0 +1,93 @@
+{
+  "calculator": "savings_growth",
+  "status": "captured",
+  "source": "Case 1 is the incumbent Bishinews 'Savings Calculator' screenshot (third-party app: S$22,353.61 balance, 2.1458% APY). All cases independently recomputed in Python with 60-digit Decimal from the textbook formulas j=(1+r/m)^(m/12)-1 and the annuity/annuity-due future value.",
+  "capturedOn": "2026-09-13",
+  "capturedBy": "claude (independent Decimal recompute)",
+  "cases": [
+    {
+      "note": "Incumbent screenshot: 10,000 + 1,000/mo, 1 yr, 2.125% monthly, start of month",
+      "status": "captured",
+      "inputs": {
+        "initial": 10000,
+        "monthly": 1000,
+        "rate": 2.125,
+        "years": 1,
+        "compounding": "Monthly",
+        "timing": "Start of month"
+      },
+      "expect": {
+        "primary": "S$ 22,353.61",
+        "secondary": {
+          "Total deposited": "S$ 22,000",
+          "Interest earned": "S$ 354",
+          "Effective yield": "2.1458%"
+        }
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "Seeded example: 10,000 + 500/mo, 10 yr, 3% monthly, end of month",
+      "status": "captured",
+      "inputs": {
+        "initial": 10000,
+        "monthly": 500,
+        "rate": 3,
+        "years": 10,
+        "compounding": "Monthly",
+        "timing": "End of month"
+      },
+      "expect": {
+        "primary": "S$ 83,364.24",
+        "secondary": {
+          "Total deposited": "S$ 70,000",
+          "Interest earned": "S$ 13,364",
+          "Effective yield": "3.0416%"
+        }
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "Quarterly compounding as a monthly rate: 25,000 + 300/mo, 15 yr, 4%",
+      "status": "captured",
+      "inputs": {
+        "initial": 25000,
+        "monthly": 300,
+        "rate": 4,
+        "years": 15,
+        "compounding": "Quarterly",
+        "timing": "End of month"
+      },
+      "expect": {
+        "primary": "S$ 119,164.59",
+        "secondary": {
+          "Total deposited": "S$ 79,000",
+          "Interest earned": "S$ 40,165",
+          "Effective yield": "4.0604%"
+        }
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "Daily compounding, lump sum only: 50,000, 5 yr, 2.5%",
+      "status": "captured",
+      "inputs": {
+        "initial": 50000,
+        "monthly": 0,
+        "rate": 2.5,
+        "years": 5,
+        "compounding": "Daily",
+        "timing": "End of month"
+      },
+      "expect": {
+        "primary": "S$ 56,657.18",
+        "secondary": {
+          "Total deposited": "S$ 50,000",
+          "Interest earned": "S$ 6,657",
+          "Effective yield": "2.5314%"
+        }
+      },
+      "toleranceCents": 1
+    }
+  ]
+}

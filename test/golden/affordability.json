@@ -1,0 +1,47 @@
+{
+  "calculator": "affordability",
+  "status": "captured",
+  "source": "Parameters from MAS published guidance (TDSR 55%, medium-term rate floor 4%, LTV 75% for a first loan with tenure <=30 years). The Notice 645 PDF was unreachable when this was written, so the parameters are MAS explainer-sourced rather than read off the Notice; re-verify before shipping. The arithmetic below was recomputed independently in Python with exact Decimal maths and agrees to the dollar. NOTE: the 75% LTV also requires the tenure to end before age 65, and this tool does not ask for age, so it does not apply that check.",
+  "capturedOn": "2026-09-13",
+  "capturedBy": "claude (independent Decimal recompute, MAS-published parameters)",
+  "cases": [
+    {
+      "note": "9,000 income, 600 debts, HDB: MSR binds at 2,700 not TDSR at 4,350",
+      "status": "captured",
+      "inputs": {
+        "income": 9000,
+        "debts": 600,
+        "cash": 250000,
+        "tenor": 25,
+        "type": "HDB / EC"
+      },
+      "expect": {
+        "primary": "S$ 682,029",
+        "secondary": {
+          "Max loan": "S$ 511,522",
+          "Down payment": "S$ 170,507",
+          "Limited by": "Loan ceiling"
+        }
+      },
+      "toleranceCents": 100
+    },
+    {
+      "note": "12,000 income, 1,000 debts, private: TDSR binds at 5,600",
+      "status": "captured",
+      "inputs": {
+        "income": 12000,
+        "debts": 1000,
+        "cash": 400000,
+        "tenor": 30,
+        "type": "Private"
+      },
+      "expect": {
+        "primary": "S$ 1,563,977",
+        "secondary": {
+          "Max loan": "S$ 1,172,983"
+        }
+      },
+      "toleranceCents": 100
+    }
+  ]
+}

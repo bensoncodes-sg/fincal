@@ -1,0 +1,49 @@
+{
+  "calculator": "personal_loan",
+  "status": "captured",
+  "source": "Independent Python Decimal recompute: flat interest on original principal, fee deducted from amount received, monthly rate found by 300-step bisection, EIR=(1+i)^12-1.",
+  "capturedOn": "2026-09-13",
+  "capturedBy": "claude (independent Decimal recompute)",
+  "cases": [
+    {
+      "note": "Seeded example: 20,000 at 3.5% flat, 3 yr, 1% fee",
+      "status": "captured",
+      "inputs": {
+        "loan": 20000,
+        "flatRate": 3.5,
+        "tenure": 3,
+        "fee": 1
+      },
+      "expect": {
+        "primary": "7.53%",
+        "secondary": {
+          "Monthly instalment": "S$ 613.89",
+          "Total interest": "S$ 2,100",
+          "You receive": "S$ 19,800",
+          "Nominal equivalent": "7.28%"
+        }
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "No fee: 50,000 at 2.88% flat, 5 yr",
+      "status": "captured",
+      "inputs": {
+        "loan": 50000,
+        "flatRate": 2.88,
+        "tenure": 5,
+        "fee": 0
+      },
+      "expect": {
+        "primary": "5.56%",
+        "secondary": {
+          "Monthly instalment": "S$ 953.33",
+          "Total interest": "S$ 7,200",
+          "You receive": "S$ 50,000",
+          "Nominal equivalent": "5.43%"
+        }
+      },
+      "toleranceCents": 1
+    }
+  ]
+}

@@ -1,0 +1,108 @@
+{
+  "calculator": "income_tax",
+  "status": "captured",
+  "source": "PRIMARY: IRAS 'Income Tax Calculator for Tax Resident Individuals', YEAR OF ASSESSMENT 2026, downloaded from iras.gov.sg/docs/default-source/individual-income-tax/tax-calculator_residents_ya26.xlsm and read on 13 Sep 2026. Its published table gives gross tax payable at every threshold: 20,000->0, 30,000->200, 40,000->550, 80,000->3,350, 120,000->7,950, 160,000->13,950, 200,000->21,150, 240,000->28,750, 280,000->36,550, 320,000->44,550, 500,000->84,150, 1,000,000->199,150, above 1m at 24%. Relief cap S$80,000 is stated on the same sheet.",
+  "capturedOn": "2026-09-13",
+  "capturedBy": "claude (IRAS YA2026 calculator spreadsheet)",
+  "cases": [
+    {
+      "note": "chargeable 80,000 -> 3,350 [PRIMARY]",
+      "status": "captured",
+      "inputs": {
+        "income": 80000,
+        "reliefs": 0,
+        "srs": 0,
+        "donations": 0
+      },
+      "expect": {
+        "primary": "S$ 3,350.00",
+        "secondary": {
+          "Chargeable income": "S$ 80,000",
+          "Marginal rate": "7.0%"
+        }
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "no tax at or below the 20,000 threshold [PRIMARY]",
+      "status": "captured",
+      "inputs": {
+        "income": 20000,
+        "reliefs": 0,
+        "srs": 0,
+        "donations": 0
+      },
+      "expect": {
+        "primary": "S$ 0.00"
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "chargeable 120,000 -> 7,950 [PRIMARY]",
+      "status": "captured",
+      "inputs": {
+        "income": 120000,
+        "reliefs": 0,
+        "srs": 0,
+        "donations": 0
+      },
+      "expect": {
+        "primary": "S$ 7,950.00",
+        "secondary": {
+          "Marginal rate": "11.5%"
+        }
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "chargeable 200,000 -> 21,150 [PRIMARY, upper band]",
+      "status": "captured",
+      "inputs": {
+        "income": 200000,
+        "reliefs": 0,
+        "srs": 0,
+        "donations": 0
+      },
+      "expect": {
+        "primary": "S$ 21,150.00",
+        "secondary": {
+          "Marginal rate": "18.0%"
+        }
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "chargeable 320,000 -> 44,550 [PRIMARY, upper band]",
+      "status": "captured",
+      "inputs": {
+        "income": 320000,
+        "reliefs": 0,
+        "srs": 0,
+        "donations": 0
+      },
+      "expect": {
+        "primary": "S$ 44,550.00",
+        "secondary": {
+          "Marginal rate": "20.0%"
+        }
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "personal relief cap holds at 80,000 [PRIMARY]",
+      "status": "captured",
+      "inputs": {
+        "income": 300000,
+        "reliefs": 200000,
+        "srs": 0,
+        "donations": 0
+      },
+      "expect": {
+        "secondary": {
+          "Chargeable income": "S$ 220,000"
+        }
+      },
+      "toleranceCents": 1
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "calculator": "gst",
+  "status": "captured",
+  "source": "Definitional arithmetic at the ruleset's GST rate: 100 x 1.09 = 109 and 109 / 1.09 = 100. The RATE itself is statutory and lives in sg_rules.dart; these cases pin the arithmetic, not the rate.",
+  "capturedOn": "2026-09-13",
+  "capturedBy": "claude (hand-derived)",
+  "cases": [
+    {
+      "note": "100 plus GST is 109",
+      "status": "captured",
+      "inputs": {
+        "amount": 100,
+        "mode": "Add GST"
+      },
+      "expect": {
+        "primary": "S$ 109.00",
+        "secondary": {
+          "Before GST": "S$ 100.00"
+        }
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "109 inclusive strips back to exactly 100",
+      "status": "captured",
+      "inputs": {
+        "amount": 109,
+        "mode": "Remove GST"
+      },
+      "expect": {
+        "primary": "S$ 100.00"
+      },
+      "toleranceCents": 1
+    }
+  ]
+}

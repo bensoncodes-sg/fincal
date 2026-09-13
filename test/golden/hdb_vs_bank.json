@@ -1,0 +1,44 @@
+{
+  "calculator": "hdb_vs_bank",
+  "status": "captured",
+  "source": "INDEPENDENT CROSS-CHECK: recomputed in a separate Python implementation using exact Decimal arithmetic (a different numeric model from the app's doubles) from the published annuity formula, and it agrees to the cent. The engine is separately validated against a third-party app's published figures in external_oracle_test.dart. This pins the arithmetic; the interest convention (monthly rest, nominal/12) is an assumption stated on each result. The HDB concessionary rate of 2.6% is a statutory input held in sg_rules.dart and is NOT verified by these cases.",
+  "capturedOn": "2026-09-13",
+  "capturedBy": "claude (independent Decimal recompute)",
+  "cases": [
+    {
+      "note": "300,000 over 25 years, HDB 2.6% against bank 3.85%",
+      "status": "captured",
+      "inputs": {
+        "loan": 300000,
+        "tenor": 25,
+        "hdbRate": 2.6,
+        "bankRate": 3.85
+      },
+      "expect": {
+        "secondary": {
+          "HDB instalment": "S$ 1,361.01",
+          "Bank instalment": "S$ 1,558.77",
+          "HDB total interest": "S$ 108,302"
+        }
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "500,000 over 20 years against a 3.5% package",
+      "status": "captured",
+      "inputs": {
+        "loan": 500000,
+        "tenor": 20,
+        "hdbRate": 2.6,
+        "bankRate": 3.5
+      },
+      "expect": {
+        "secondary": {
+          "HDB instalment": "S$ 2,673.94",
+          "Bank instalment": "S$ 2,899.80"
+        }
+      },
+      "toleranceCents": 1
+    }
+  ]
+}

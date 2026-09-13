@@ -1,0 +1,49 @@
+{
+  "calculator": "roi",
+  "status": "captured",
+  "source": "Independent Python Decimal recompute of money back = value + income - fees, total return, and CAGR (back/invested)^(1/years)-1.",
+  "capturedOn": "2026-09-13",
+  "capturedBy": "claude (independent Decimal recompute)",
+  "cases": [
+    {
+      "note": "Seeded example: 10,000 to 14,500 plus 600 income less 120 fees over 3.5 yr",
+      "status": "captured",
+      "inputs": {
+        "invested": 10000,
+        "value": 14500,
+        "income": 600,
+        "fees": 120,
+        "years": 3.5
+      },
+      "expect": {
+        "primary": "12.24%",
+        "secondary": {
+          "Total return": "49.80%",
+          "Profit": "S$ 4,980",
+          "Money back": "S$ 14,980"
+        }
+      },
+      "toleranceCents": 100
+    },
+    {
+      "note": "A loss: 20,000 now worth 17,000 after 2 yr",
+      "status": "captured",
+      "inputs": {
+        "invested": 20000,
+        "value": 17000,
+        "income": 0,
+        "fees": 0,
+        "years": 2
+      },
+      "expect": {
+        "primary": "-7.80%",
+        "secondary": {
+          "Total return": "-15.00%",
+          "Profit": "-S$ 3,000",
+          "Money back": "S$ 17,000"
+        }
+      },
+      "toleranceCents": 100
+    }
+  ]
+}

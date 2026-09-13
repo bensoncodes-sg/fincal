@@ -1,0 +1,67 @@
+{
+  "calculator": "percentage",
+  "status": "captured",
+  "source": "Definitional arithmetic, checkable by hand without reference to this app: 20/100*100 = 20 and (125-100)/100*100 = 25. Not statutory data, so no external authority applies.",
+  "capturedOn": "2026-09-12",
+  "capturedBy": "claude (hand-derived)",
+  "cases": [
+    {
+      "note": "20 is 20% of 100",
+      "status": "captured",
+      "inputs": {
+        "mode": "Percentage of",
+        "a": 100,
+        "b": 20
+      },
+      "expect": {
+        "primary": "20.00%"
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "75 is 30% of 250",
+      "status": "captured",
+      "inputs": {
+        "mode": "Percentage of",
+        "a": 250,
+        "b": 75
+      },
+      "expect": {
+        "primary": "30.00%"
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "100 to 125 is a 25% increase",
+      "status": "captured",
+      "inputs": {
+        "mode": "Percentage change",
+        "a": 100,
+        "b": 125
+      },
+      "expect": {
+        "primary": "25.00%",
+        "secondary": {
+          "Direction": "Increase"
+        }
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "200 to 150 is a 25% decrease",
+      "status": "captured",
+      "inputs": {
+        "mode": "Percentage change",
+        "a": 200,
+        "b": 150
+      },
+      "expect": {
+        "primary": "-25.00%",
+        "secondary": {
+          "Direction": "Decrease"
+        }
+      },
+      "toleranceCents": 1
+    }
+  ]
+}

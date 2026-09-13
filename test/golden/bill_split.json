@@ -1,0 +1,41 @@
+{
+  "calculator": "bill_split",
+  "status": "captured",
+  "source": "Hand-derived on the Singapore ordering: 120 + 10% service = 132, then GST 9% of 132 = 11.88, total 143.88, divided by 4 = 35.97. Adding 19% straight to 120 would give 142.80, which is the common mistake this pins against.",
+  "capturedOn": "2026-09-13",
+  "capturedBy": "claude (hand-derived)",
+  "cases": [
+    {
+      "note": "120 bill, 10% service, GST on the subtotal, split 4 ways",
+      "status": "captured",
+      "inputs": {
+        "bill": 120,
+        "service": 10.0,
+        "people": 4
+      },
+      "expect": {
+        "primary": "S$ 35.97",
+        "secondary": {
+          "Total": "S$ 143.88"
+        }
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "no service charge: 100 + GST split 2 ways",
+      "status": "captured",
+      "inputs": {
+        "bill": 100,
+        "service": 0.0,
+        "people": 2
+      },
+      "expect": {
+        "primary": "S$ 54.50",
+        "secondary": {
+          "Total": "S$ 109.00"
+        }
+      },
+      "toleranceCents": 1
+    }
+  ]
+}

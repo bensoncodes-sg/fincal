@@ -1,0 +1,75 @@
+{
+  "calculator": "cpf_projection",
+  "status": "captured",
+  "source": "Limits and rates are all PRIMARY-sourced: Basic Healthcare Sum S$79,000 and the interest floors and extra-interest tiers from the MOH/CPF release 'CPF interest rates from 1 Jan to 31 Mar 2026 and Basic Healthcare Sum for 2026'; Full Retirement Sum S$220,400 from the MOM factsheet 'Basic Retirement Sums for CPF Members Reaching Age 55 from 2023 to 2027'; contribution and allocation rates from the CPF Board PDFs. All read 13 Sep 2026.\n\nThe expected figures below were recomputed in a SEPARATE Python implementation written from those published rules, and agree with the app to the dollar. IMPORTANT: this verifies that the app faithfully implements the published rules; it is NOT a comparison against CPF's own projection calculator. Known simplifications that remain: the BHS is held flat (CPF raises it most years), and housing withdrawals, top-ups and CPF LIFE are excluded.",
+  "capturedOn": "2026-09-13",
+  "capturedBy": "claude (primary limits + independent recompute)",
+  "cases": [
+    {
+      "note": "age 32 to 55, 7,000 salary, 2.5% growth - MediSave caps at the BHS",
+      "status": "captured",
+      "inputs": {
+        "age": 32,
+        "salary": 7000,
+        "oa": 48000,
+        "sa": 32000,
+        "ma": 26000,
+        "toAge": 55,
+        "growth": 2.5
+      },
+      "expect": {
+        "primary": "S$ 1,407,523",
+        "secondary": {
+          "Ordinary Account": "S$ 750,658",
+          "Special Account": "S$ 577,865",
+          "MediSave": "S$ 79,000",
+          "Interest earned": "S$ 499,152"
+        }
+      },
+      "toleranceCents": 100
+    },
+    {
+      "note": "age 50 to 60 - crosses 55, so the RA is formed up to the FRS",
+      "status": "captured",
+      "inputs": {
+        "age": 50,
+        "salary": 8000,
+        "oa": 150000,
+        "sa": 120000,
+        "ma": 60000,
+        "toAge": 60,
+        "growth": 0.0
+      },
+      "expect": {
+        "primary": "S$ 868,433",
+        "secondary": {
+          "Ordinary Account": "S$ 531,151",
+          "Retirement Account": "S$ 258,282",
+          "MediSave": "S$ 79,000"
+        }
+      },
+      "toleranceCents": 100
+    },
+    {
+      "note": "age 30 to 40, flat salary - MediSave still below the BHS",
+      "status": "captured",
+      "inputs": {
+        "age": 30,
+        "salary": 5000,
+        "oa": 20000,
+        "sa": 10000,
+        "ma": 8000,
+        "toAge": 40,
+        "growth": 0.0
+      },
+      "expect": {
+        "primary": "S$ 318,376",
+        "secondary": {
+          "Ordinary Account": "S$ 187,734",
+          "MediSave": "S$ 71,132"
+        }
+      },
+      "toleranceCents": 100
+    }
+  ]
+}

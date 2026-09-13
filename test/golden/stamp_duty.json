@@ -1,0 +1,72 @@
+{
+  "calculator": "stamp_duty",
+  "status": "captured",
+  "source": "PRIMARY: IRAS 'Duty Rates for Stamp Duty' dataset published on data.gov.sg (resource d_611a3ae502e72fd1ce8adb4e54abfc64), fetched 13 Sep 2026. BSD from 2023-02-15 on residential property: first 180,000 at 1%, next 180,000 at 2%, next 640,000 at 3%, next 500,000 at 4%, next 1,500,000 at 5%, above 3,000,000 at 6%. ABSD from 2023-04-27: citizen 2nd 20% / 3rd 30%, PR 1st 5% / 2nd 30% / 3rd 35%, foreigner 60%. Expected totals below were computed by hand from those tiers.",
+  "capturedOn": "2026-09-13",
+  "capturedBy": "claude (IRAS dataset via data.gov.sg)",
+  "cases": [
+    {
+      "note": "850,000 citizen first property: 1,800 + 3,600 + 14,700 = 20,100 [PRIMARY]",
+      "status": "captured",
+      "inputs": {
+        "price": 850000,
+        "profile": "Citizen",
+        "count": 1
+      },
+      "expect": {
+        "primary": "S$ 20,100.00",
+        "secondary": {
+          "Buyer stamp duty": "S$ 20,100.00"
+        }
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "1,500,000 citizen second: BSD 44,600 + ABSD 20% 300,000 = 344,600 [PRIMARY]",
+      "status": "captured",
+      "inputs": {
+        "price": 1500000,
+        "profile": "Citizen",
+        "count": 2
+      },
+      "expect": {
+        "primary": "S$ 344,600.00",
+        "secondary": {
+          "Buyer stamp duty": "S$ 44,600.00"
+        }
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "1,200,000 PR first: BSD 32,600 + ABSD 5% 60,000 = 92,600 [PRIMARY]",
+      "status": "captured",
+      "inputs": {
+        "price": 1200000,
+        "profile": "PR",
+        "count": 1
+      },
+      "expect": {
+        "primary": "S$ 92,600.00",
+        "secondary": {
+          "Buyer stamp duty": "S$ 32,600.00"
+        }
+      },
+      "toleranceCents": 1
+    },
+    {
+      "note": "foreigner pays 60% ABSD on a first property [PRIMARY]",
+      "status": "captured",
+      "inputs": {
+        "price": 850000,
+        "profile": "Foreigner",
+        "count": 1
+      },
+      "expect": {
+        "secondary": {
+          "ABSD 60%": "S$ 510,000"
+        }
+      },
+      "toleranceCents": 1
+    }
+  ]
+}
