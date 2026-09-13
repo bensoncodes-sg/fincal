@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import 'package:basis/feedback.dart';
+import 'package:basis/state.dart';
 
 /// A sink that records what it was asked to send and can be made to fail,
 /// so the queueing behaviour can be tested without a network.
@@ -225,14 +226,62 @@ void main() {
   });
 
   test('no secret is compiled into the app', () {
-    // The endpoint is a public form URL by design. A service key or bot token
-    // must never live here, so this asserts the shipped value stays inert.
+    // The endpoint is a public relay URL by design. A bot token must never
+    // be compiled in, whatever FEEDBACK_URL the build was given.
     expect(
-      kFeedbackEndpoint,
-      isEmpty,
-      reason: 'set this to a PUBLIC form endpoint only, never a secret key',
+      isSafeFeedbackEndpoint(kFeedbackEndpoint),
+      isTrue,
+      reason: 'FEEDBACK_URL must be the relay, never a Telegram API URL',
     );
   });
+
+  test('the endpoint guard rejects anything that would leak a bot token', () {
+    expect(isSafeFeedbackEndpoint(''), isTrue);
+    expect(
+      isSafeFeedbackEndpoint('https://basis-feedback.ben.workers.dev'),
+      isTrue,
+    );
+    expect(
+      isSafeFeedbackEndpoint(
+        'https://api.telegram.org/bot123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw/sendMessage',
+      ),
+      isFalse,
+    );
+    expect(
+      isSafeFeedbackEndpoint(
+        'https://relay.example.com/?t=123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw',
+      ),
+      isFalse,
+    );
+    expect(isSafeFeedbackEndpoint('http://insecure.example.com'), isFalse);
+  });
+
+  test(
+    'feedback queued while offline is sent when the app next opens',
+    () async {
+      final tmp = Directory.systemTemp.createTempSync('basis_fb_reopen');
+      addTearDown(() => tmp.deleteSync(recursive: true));
+
+      final offline = FeedbackService(
+        store: FeedbackStore(directory: tmp),
+        sink: _RecordingSink(succeed: false),
+      );
+      expect(await offline.submit(_item('q1')), FeedbackOutcome.queued);
+
+      final online = _RecordingSink();
+      final app = AppState(
+        feedback: FeedbackService(
+          store: FeedbackStore(directory: tmp),
+          sink: online,
+        ),
+      );
+      await app.init();
+      await Future<void>.delayed(const Duration(milliseconds: 50));
+
+      expect(online.sent.map((i) => i.id), ['q1']);
+      expect(await app.feedback.pending(), isEmpty);
+    },
+  );
 }
 
 class _ThrowingSink implements FeedbackSink {

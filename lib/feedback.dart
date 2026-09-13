@@ -22,7 +22,23 @@ export 'platform/feedback_store_io.dart'
 ///   * No secret ever ships in the app. [kFeedbackEndpoint] is a public
 ///     form URL by design — the kind Formspree or Web3Forms hand out. A
 ///     database service key or bot token must never go here.
-const String kFeedbackEndpoint = '';
+///
+/// Supplied at build time (`--dart-define=FEEDBACK_URL=...`, set as an
+/// environment variable on Render) so the address can change without a code
+/// change. In practice it is the Cloudflare Worker in `feedback-relay/`, which
+/// holds the Telegram token server-side.
+const String kFeedbackEndpoint = String.fromEnvironment('FEEDBACK_URL');
+
+/// True when [url] is safe to compile into the app: HTTPS, and not a direct
+/// Telegram API call or anything shaped like a bot token.
+bool isSafeFeedbackEndpoint(String url) {
+  if (url.isEmpty) return true;
+  final uri = Uri.tryParse(url);
+  if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) return false;
+  if (uri.host.contains('telegram.org')) return false;
+  if (RegExp(r'\d{6,}:[A-Za-z0-9_-]{30,}').hasMatch(url)) return false;
+  return true;
+}
 
 enum FeedbackCategory {
   wrongNumber('A number looks wrong'),
@@ -206,6 +222,9 @@ class FeedbackService {
       return false;
     }
   }
+
+  /// False when there is nowhere to send to, so there is nothing to retry.
+  bool get canSend => _sink is! LocalOnlySink;
 
   Future<List<FeedbackItem>> pending() async =>
       (await _store.load()).where((i) => !i.sent).toList();

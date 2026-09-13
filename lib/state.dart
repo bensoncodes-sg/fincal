@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import 'core/calculator.dart';
@@ -153,6 +154,10 @@ class AppState extends ChangeNotifier {
     }
     _ready = true;
     notifyListeners();
+    // Feedback written while offline waits in the local queue; send it now
+    // the app is open again. Never awaited: a slow network must not hold up
+    // the first screen, and a failure simply leaves it queued.
+    if (feedback.canSend) unawaited(feedback.flush());
   }
 
   /// The app opens in a realistic working state rather than an empty shell.
