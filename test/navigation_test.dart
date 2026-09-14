@@ -132,7 +132,10 @@ void main() {
 
   testWidgets('the whole app boots and reaches the shell', (tester) async {
     await tester.pumpWidget(
-      BasisApp(tourMemory: InMemoryTourMemory(seen: true)),
+      BasisApp(
+        tourMemory: InMemoryTourMemory(seen: true),
+        scenarioStore: InMemoryScenarioStore(),
+      ),
     );
     await tester.pump();
     // Splash hands off on a timer; let it run out.
@@ -170,10 +173,12 @@ void main() {
     expect(find.text('Pay a fixed amount').hitTestable(), findsOneWidget);
 
     // Mid-screen, clear of the save bar pinned to the bottom.
-    await tester.runAsync(() => Scrollable.ensureVisible(
-          tester.element(find.text('Clear it by a date')),
-          alignment: 0.5,
-        ));
+    await tester.runAsync(
+      () => Scrollable.ensureVisible(
+        tester.element(find.text('Clear it by a date')),
+        alignment: 0.5,
+      ),
+    );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Clear it by a date'));
     await tester.pumpAndSettle();
@@ -216,16 +221,23 @@ void main() {
     await tester.pump();
     final ctl = tester.widget<EditableText>(field).controller;
     expect(ctl.selection.start, 0);
-    expect(ctl.selection.end, ctl.text.length,
-        reason: 'tapping a figure should select all of it, so typing '
-            'replaces it rather than editing from wherever the finger landed');
+    expect(
+      ctl.selection.end,
+      ctl.text.length,
+      reason:
+          'tapping a figure should select all of it, so typing '
+          'replaces it rather than editing from wherever the finger landed',
+    );
 
     // On the way to a new number the field passes through an invalid value.
     await tester.enterText(field, '0');
     await tester.pump();
     expect(find.text('Enter the balance on the card.'), findsOneWidget);
-    expect(tester.widget<EditableText>(field).focusNode.hasFocus, isTrue,
-        reason: 'the error state rebuilt the inputs and closed the keyboard');
+    expect(
+      tester.widget<EditableText>(field).focusNode.hasFocus,
+      isTrue,
+      reason: 'the error state rebuilt the inputs and closed the keyboard',
+    );
 
     await tester.enterText(field, '12000');
     await tester.pump();
@@ -234,8 +246,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('save is visibly disabled while the inputs cannot compute',
-      (tester) async {
+  testWidgets('save is visibly disabled while the inputs cannot compute', (
+    tester,
+  ) async {
     final calc = calculatorById('credit_card')!;
     await tester.pumpWidget(
       MaterialApp(
@@ -261,8 +274,9 @@ void main() {
     expect(bar().onCompare, isNull);
   });
 
-  testWidgets('OPEN on a saved scenario restores its inputs, not the example',
-      (tester) async {
+  testWidgets('OPEN on a saved scenario restores its inputs, not the example', (
+    tester,
+  ) async {
     tester.view.physicalSize = const Size(1170, 2532);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
@@ -270,24 +284,23 @@ void main() {
     final app = AppState();
     await app.init();
     final calc = calculatorById('credit_card')!;
-    final inputs = {
-      ...calc.defaults,
-      'balance': Money.tryParse('12000')!,
-    };
+    final inputs = {...calc.defaults, 'balance': Money.tryParse('12000')!};
     final r = calc.compute(inputs, app.rules);
     expect(r.primaryValue, '51 months');
     for (final s in List.of(app.scenarios)) {
       await app.deleteScenario(s.id);
     }
-    await app.saveScenario(Scenario(
-      id: 'mine',
-      calculatorId: 'credit_card',
-      name: 'Card test 12k',
-      inputs: inputs,
-      savedAt: DateTime.now(),
-      headlineLabel: r.primaryLabel,
-      headlineValue: r.primaryValue,
-    ));
+    await app.saveScenario(
+      Scenario(
+        id: 'mine',
+        calculatorId: 'credit_card',
+        name: 'Card test 12k',
+        inputs: inputs,
+        savedAt: DateTime.now(),
+        headlineLabel: r.primaryLabel,
+        headlineValue: r.primaryValue,
+      ),
+    );
 
     await tester.pumpWidget(
       MaterialApp(
@@ -304,11 +317,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(CalculatorScreen), findsOneWidget);
-    expect(find.text('51 months'), findsOneWidget,
-        reason: 'opened with the example balance instead of the saved one');
+    expect(
+      find.text('51 months'),
+      findsOneWidget,
+      reason: 'opened with the example balance instead of the saved one',
+    );
     expect(find.text('27 months'), findsNothing);
-    expect(find.text('LIVE'), findsOneWidget,
-        reason: 'saved figures belong to the user, not the example');
+    expect(
+      find.text('LIVE'),
+      findsOneWidget,
+      reason: 'saved figures belong to the user, not the example',
+    );
     expect(tester.takeException(), isNull);
   });
 }

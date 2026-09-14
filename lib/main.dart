@@ -17,14 +17,19 @@ class BasisApp extends StatefulWidget {
   /// one so runs do not affect each other.
   final TourMemory? tourMemory;
 
-  const BasisApp({super.key, this.tourMemory});
+  /// Where saved scenarios live. Tests pass an in-memory store: the real one
+  /// does disk work, which never completes under the test clock, so on a
+  /// fresh machine (like the deploy server) the app never finished starting.
+  final ScenarioStore? scenarioStore;
+
+  const BasisApp({super.key, this.tourMemory, this.scenarioStore});
 
   @override
   State<BasisApp> createState() => _BasisAppState();
 }
 
 class _BasisAppState extends State<BasisApp> {
-  final _app = AppState(store: createScenarioStore());
+  late final AppState _app;
   final _navigatorKey = GlobalKey<NavigatorState>();
   late final Future<void> _ready;
   late final TourController _tour;
@@ -33,6 +38,7 @@ class _BasisAppState extends State<BasisApp> {
   @override
   void initState() {
     super.initState();
+    _app = AppState(store: widget.scenarioStore ?? createScenarioStore());
     _ready = _app.init();
     _tour = TourController(
       app: _app,

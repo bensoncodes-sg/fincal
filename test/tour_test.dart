@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:basis/main.dart';
+import 'package:basis/state.dart';
 import 'package:basis/ui/screens/calculator_screen.dart';
 import 'package:basis/ui/screens/shell.dart';
 import 'package:basis/ui/tour.dart';
@@ -26,7 +27,9 @@ void main() {
 
   Future<TourController> launch(WidgetTester tester, TourMemory memory) async {
     phone(tester);
-    await tester.pumpWidget(BasisApp(tourMemory: memory));
+    await tester.pumpWidget(
+      BasisApp(tourMemory: memory, scenarioStore: InMemoryScenarioStore()),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 1800)); // splash
     await settle(tester, 20);
